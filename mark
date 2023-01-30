@@ -1,0 +1,7 @@
+CIFAR-10数据集由10个类的60000个32x32彩色图像组成
+emnist=28*28
+
+net:
+LeNet
+google
+alexnet
