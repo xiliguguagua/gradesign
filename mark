@@ -1,5 +1,6 @@
 CIFAR-10数据集由10个类的60000个32x32彩色图像组成
 emnist=28*28
+class pyod.models.vae.VAE(gamma=1.0) larger beta makes simpler q(z|x) and trans less infomation
 
 net:
 LeNet
