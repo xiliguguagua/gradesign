@@ -6,3 +6,12 @@ net:
 LeNet
 google
 alexnet
+
+Convolution 16 ﬁlters of 8×8, Stride 2
+Max-Pooling 2×2
+Convolution 32 ﬁlters of 4×4, Stride 2
+Max-Pooling 2×2
+Fully connected 32 units
+Softmax 10 units
+
+epoch-80; lr-0.3(0~70); lr-0.18(70~80);
