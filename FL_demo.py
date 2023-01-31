@@ -101,3 +101,9 @@ if __name__ == '__main__':
     train_state = result.state
     train_metrics = result.metrics
     print('round  1, metrics={}'.format(train_metrics))
+
+    for round_num in range(2, args.T):
+        result = training_process.next(train_state, federated_train_data)
+        train_state = result.state
+        train_metrics = result.metrics
+        print('round {:2d}, metrics={}'.format(round_num, train_metrics))
