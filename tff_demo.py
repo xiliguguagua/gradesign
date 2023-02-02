@@ -66,7 +66,7 @@ def create_keras_model():
         tf.keras.layers.Conv2D(filters=32, kernel_size=4, strides=2, activation="relu"),
         tf.keras.layers.MaxPooling2D(pool_size=(2, 2)),
         tf.keras.layers.Dense(units=32, activation="relu"),
-        tf.keras.layers.Dense(units=10, activation="relu"),
+        tf.keras.layers.Dense(units=10),
         tf.keras.layers.Softmax(),
     ])
 
