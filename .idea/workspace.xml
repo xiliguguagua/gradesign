@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="1cf84d12-88f7-469a-9537-6ba95a90a037" name="变更" comment="add network" />
+    <list default="true" id="8402de01-6612-4970-9604-e6e3a4536fbf" name="Changes" comment="1-31-13-55" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -17,19 +17,25 @@
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
-  <component name="ProjectId" id="2L8T0sDAvUjZSlbQYduXd6mrAKQ" />
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectId" id="2Kyx3ifTgGPif05tVM0HYl1erGn" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">
-    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
-    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
-    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
-  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable&quot;
+  }
+}</component>
   <component name="RunManager">
-    <configuration name="torch_demo" type="PythonConfigurationType" factoryName="Python" nameIsGenerated="true">
-      <module name="code" />
+    <configuration name="FL_demo" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="gradesign" />
       <option name="INTERPRETER_OPTIONS" value="" />
       <option name="PARENT_ENVS" value="true" />
       <envs>
@@ -40,7 +46,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="D:\graduate_design\code\code\torch_demo.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/FL_demo.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
@@ -49,31 +55,57 @@
       <option name="INPUT_FILE" value="" />
       <method v="2" />
     </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.FL_demo" />
+      </list>
+    </recent_temporary>
   </component>
-  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="应用程序级" UseSingleDictionary="true" transferred="true" />
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TaskManager">
-    <task active="true" id="Default" summary="默认任务">
-      <changelist id="1cf84d12-88f7-469a-9537-6ba95a90a037" name="变更" comment="" />
-      <created>1675251492459</created>
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="8402de01-6612-4970-9604-e6e3a4536fbf" name="Changes" comment="" />
+      <created>1674960429126</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1675251492459</updated>
+      <updated>1674960429126</updated>
     </task>
-    <task id="LOCAL-00001" summary="add pytorch demo">
-      <created>1675253951877</created>
+    <task id="LOCAL-00001" summary="1-30-14-44">
+      <created>1675061074603</created>
       <option name="number" value="00001" />
       <option name="presentableId" value="LOCAL-00001" />
       <option name="project" value="LOCAL" />
-      <updated>1675253951877</updated>
+      <updated>1675061074603</updated>
     </task>
-    <task id="LOCAL-00002" summary="add network">
-      <created>1675349412898</created>
+    <task id="LOCAL-00002" summary="1-30-14-48">
+      <created>1675061297710</created>
       <option name="number" value="00002" />
       <option name="presentableId" value="LOCAL-00002" />
       <option name="project" value="LOCAL" />
-      <updated>1675349412898</updated>
+      <updated>1675061297710</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="1-30-17-06">
+      <created>1675069612776</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1675069612776</updated>
+    </task>
+    <task id="LOCAL-00004" summary="1-31-11-14">
+      <created>1675134900537</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1675134900538</updated>
+    </task>
+    <task id="LOCAL-00005" summary="1-31-13-55">
+      <created>1675144521223</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1675144521223</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -84,42 +116,15 @@
             <State />
           </value>
         </entry>
-        <entry key="ac465d56-a289-46e1-8e0e-76e6ab89efc2">
-          <value>
-            <State>
-              <option name="SHOW_ONLY_AFFECTED_CHANGES" value="true" />
-              <option name="FILTERS">
-                <map>
-                  <entry key="branch">
-                    <value>
-                      <list>
-                        <option value="HEAD" />
-                      </list>
-                    </value>
-                  </entry>
-                  <entry key="roots">
-                    <value>
-                      <list>
-                        <option value="$PROJECT_DIR$" />
-                      </list>
-                    </value>
-                  </entry>
-                </map>
-              </option>
-            </State>
-          </value>
-        </entry>
-      </map>
-    </option>
-    <option name="OPEN_GENERIC_TABS">
-      <map>
-        <entry key="ac465d56-a289-46e1-8e0e-76e6ab89efc2" value="TOOL_WINDOW" />
       </map>
     </option>
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="add pytorch demo" />
-    <MESSAGE value="add network" />
-    <option name="LAST_COMMIT_MESSAGE" value="add network" />
+    <MESSAGE value="1-30-14-44" />
+    <MESSAGE value="1-30-14-48" />
+    <MESSAGE value="1-30-17-06" />
+    <MESSAGE value="1-31-11-14" />
+    <MESSAGE value="1-31-13-55" />
+    <option name="LAST_COMMIT_MESSAGE" value="1-31-13-55" />
   </component>
 </project>
