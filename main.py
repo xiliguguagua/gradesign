@@ -1,7 +1,8 @@
-import torch
+import argparse
 
-use_cuda = torch.cuda.is_available()
-device = torch.device("cuda" if use_cuda else "cpu")
+from utils import *
+from user import User
+
 
 def get_args():
     parser = argparse.ArgumentParser(description="train MSFL")
@@ -34,5 +35,10 @@ def get_args():
     args = parser.parse_args()
     return args
 
+
 if __name__ == '__main__':
-    pass
+    args = get_args()
+    train_dataset, test_dataset = load_data()
+    users = []
+    for i in range(args.N):
+        users.append(User(args))
