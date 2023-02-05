@@ -3,23 +3,20 @@ from tensorflow import keras
 from keras import backend
 from copy import deepcopy
 
+from utils import *
 from network import EmnistNet, Cifar10Net
-
-
-def flatten(gradients):
-    shapes = [x.shape for x in gradients]
-    return tf.concat([backend.flatten(x) for x in gradients], axis=0), shapes
 
 
 class User(object):
 
-    def __init__(self, uid, args, train_dataset, test_dataset, input_shape):
+    def __init__(self, uid, args, is_m, train_dataset, test_dataset, input_shape, n):
         super(User, self).__init__()
         self.id = uid
         self.lr = args.lr
         self.ismalice = is_m
-        self.max_iteration = max_it
-        self.min_iteration = min_it
+        self.n = n
+        self.max_iteration = args.max_it
+        self.min_iteration = args.min_it
 
         if args.task == 'emnist':
             self.local_model = EmnistNet(input_shape)
@@ -31,7 +28,6 @@ class User(object):
         self.grad = None
 
     def local_train(self):
-
         flag = True
         for _ in range(self.max_iteration):
 
@@ -56,7 +52,7 @@ class User(object):
         grad = grad / tf.maximum(1, l2_norm / C) + tf.random.normal(grad.shape, 0, sigma)
         return grad
 
-    def update_global(self, global_model):
+    def update_model(self, global_model):
         self.local_model = deepcopy(global_model)
 
     def CELoss(self, y_true, y_pred):
