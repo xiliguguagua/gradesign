@@ -29,7 +29,7 @@ class Cifar10Net(tf.keras.Model):
         self.conv_1 = tf.keras.layers.Conv2D(32, 3, strides=1, padding='same', activation='tanh', input_shape=input_shape)
         self.conv_2 = tf.keras.layers.Conv2D(32, 3, strides=1, activation='tanh')
         self.conv_3 = tf.keras.layers.Conv2D(64, 3, strides=1, activation='tanh')
-        self.conv_4 = tf.keras.layers.Conv2D(128, 3, stride=1, activation='tanh')
+        self.conv_4 = tf.keras.layers.Conv2D(128, 3, strides=1, activation='tanh')
         self.conv_5 = tf.keras.layers.Conv2D(10, 3, strides=1, activation='tanh')
         self.maxp_1 = tf.keras.layers.MaxPool2D(2, 1)
         self.maxp_2 = tf.keras.layers.MaxPool2D(2, 1)
