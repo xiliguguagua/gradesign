@@ -24,8 +24,8 @@ class EmnistNet(tf.keras.Model):
 
 class Cifar10Net(tf.keras.Model):
 
-    def __int__(self, input_shape):
-        super(Cifar10Net, self).__int__()
+    def __init__(self, input_shape):
+        super(Cifar10Net, self).__init__()
         self.conv_1 = tf.keras.layers.Conv2D(32, 3, strides=1, padding='same', activation='tanh', input_shape=input_shape)
         self.conv_2 = tf.keras.layers.Conv2D(32, 3, strides=1, activation='tanh')
         self.conv_3 = tf.keras.layers.Conv2D(64, 3, strides=1, activation='tanh')
@@ -36,7 +36,7 @@ class Cifar10Net(tf.keras.Model):
         self.dense_1 = tf.keras.layers.Dense(1024)
         self.dense_2 = tf.keras.layers.Dense(10)
 
-    def call(self, inputs, training=None, mask=None):
+    def call(self, inputs):
         out = self.conv_1(inputs)
         out = self.conv_2(out)
         out = self.maxp_1(out)
