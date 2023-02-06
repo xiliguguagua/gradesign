@@ -22,7 +22,7 @@ class Server:
 
         if args.task == 'emnist':
             self.global_model =  EmnistNet(input_shape)
-        else:
+        elif args.task == 'cifar-10':
             self.global_model = Cifar10Net(input_shape)
         self.optm = tf.keras.optimizers.SGD(learning_rate=self.lr)
 

@@ -17,10 +17,17 @@ class User(object):
         self.n = n
         self.max_iteration = args.max_it
         self.min_iteration = args.min_it
+        if self.ismalice:
+            self.attack_method = args.attack_method
+            self.noise_coeff = args.noise_coeff
+            self.attack()
+        else:
+            self.attack_method = None
+            self.noise_coeff = 0
 
         if args.task == 'emnist':
             self.local_model = EmnistNet(input_shape)
-        else:
+        elif args.task == 'cifar-10':
             self.local_model = Cifar10Net()
         self.optm = tf.keras.optimizers.SGD(learning_rate=self.lr)
         self.train_dataset = train_dataset
@@ -37,6 +44,8 @@ class User(object):
                     outputs = self.local_model(tf.expand_dims(inputs, axis=0), training=True)
                     loss = self.CELoss(tf.expand_dims(targets, axis=0), outputs)
                 grad = tape.gradient(loss, self.local_model.trainable_weights)
+                if self.ismalice and self.attack_method == 'additive noise':
+                    grad += tf.random.normal(grad.shape) * self.noise_coeff
 
                 if flag:
                     self.grad = grad
@@ -59,3 +68,10 @@ class User(object):
         vector_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y_true, logits=y_pred)
         return tf.reduce_mean(vector_loss)
 
+    def attack(self):
+        if self.attack_method == 'label-flipping':
+            pass
+        elif self.attack_method == 'backdoor':
+            pass
+        else:
+            pass

@@ -4,6 +4,7 @@ import random
 import numpy as np
 
 from utils import *
+from shuffler import UserShuffler, ModelShuffler
 from user import User
 from server import Server
 
@@ -47,6 +48,10 @@ def get_args():
                         help="alpha in AAE")
     parser.add_argument("--od_method", type=str, default='all',
                         help="to od among each shuffler or all users")
+    parser.add_argument("--attack_method", type=str, default='label-flipping',
+                        help="label-flipping / additive noise / backdoor")
+    parser.add_argument("--noiser_coeff", type=float, default=1.,
+                        help="noise amplification")
     args = parser.parse_args()
     return args
 
@@ -55,7 +60,13 @@ if __name__ == '__main__':
     args = get_args()
     train_dataset, test_dataset, input_shape = load_data()
     server = Server(args, input_shape)
+    m_shuffler = ModelShuffler(args)
+    u_shufflers = []
     users = []
+
+    for i in range(args.M):
+        u_shufflers.append(UserShuffler(args))
+    m_shuffler.collect_usershuffler(u_shufflers)
 
     # generate malice user id
     malice_idset = set()
@@ -78,8 +89,20 @@ if __name__ == '__main__':
 
     # each communication turn
     for t in range(args.T):
-        # sync global model
         for user in users:
+            # sync global model
             user.update_model(server.global_model)
-        # local train
+
+            #  AAE eliminate malice users
+            if args.AAE and user.id in server.banned_ids:
+                continue
+
+            # local train
             user.local_train()
+            # user shuffle
+            sid = random.randint(0, args.M-1)
+            u_shufflers[sid].add_user(user)
+
+        m_shuffler.split_upload()
+        server.malice_evaluation(m_shuffler, t)
+        server.aggregate(m_shuffler)
