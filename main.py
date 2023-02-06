@@ -58,7 +58,9 @@ def get_args():
 
 if __name__ == '__main__':
     args = get_args()
-    train_dataset, test_dataset, input_shape = load_data()
+    train_dataset, test_dataset, input_shape, num_classes = load_data(args)
+    n_sum = 0
+    ns = []
     server = Server(args, input_shape)
     m_shuffler = ModelShuffler(args)
     u_shufflers = []
@@ -79,13 +81,15 @@ if __name__ == '__main__':
         malice_label[m_id] = 1
 
     # split dataset to all users
-    ptr = 0
     for i in range(args.N):
         n = random.randint(200, 400)
+        n_sum += n
+        ns.append(n)
         users.append(User(i, args, malice_label[i],
-                          train_dataset[ptr:ptr+n], test_dataset[ptr:ptr+n],
-                          input_shape, n))
-        ptr += n
+                          train_dataset.take(n), test_dataset.take(round(n/5)),
+                          input_shape, n, num_classes))
+        train_dataset = train_dataset.skip(n)
+        test_dataset = test_dataset.skip(round(n/5))
 
     # each communication turn
     for t in range(args.T):
@@ -105,4 +109,8 @@ if __name__ == '__main__':
 
         m_shuffler.split_upload()
         server.malice_evaluation(m_shuffler, t)
-        server.aggregate(m_shuffler)
+        server.aggregate(m_shuffler, ns, n_sum)
+
+        # reset every user shuffler
+        for shflr in u_shufflers:
+            shflr.reset()
