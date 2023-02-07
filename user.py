@@ -9,10 +9,10 @@ from network import EmnistNet, Cifar10Net
 
 class User(object):
 
-    def __init__(self, uid, args, is_m, train_dataset, test_dataset, input_shape, n, num_classes):
+    def __init__(self, uid, args, is_m, train_dataset, test_dataset, input_shape, n):
         super(User, self).__init__()
         self.id = uid
-        self.lr = args.lr
+        self.lr = args.local_lr
         self.batch_size = args.batch_size
         self.ismalice = is_m
         self.n = n
@@ -21,14 +21,15 @@ class User(object):
         if self.ismalice:
             self.attack_method = args.attack_method
             self.noise_coeff = args.noise_coeff
-            self.attack()
         else:
             self.attack_method = None
             self.noise_coeff = 0
+        self.weights = None
+        self.weight_shapes = None
 
         if args.task == 'emnist':
             self.local_model = EmnistNet(input_shape)
-        elif args.task == 'cifar-10':
+        elif args.task == 'cifar10':
             self.local_model = Cifar10Net(input_shape)
         self.optm = tf.keras.optimizers.SGD(learning_rate=self.lr)
         self.train_dataset = train_dataset
@@ -40,42 +41,31 @@ class User(object):
         for _ in range(self.max_iteration):
 
             for batch_idx, (inputs, targets) in enumerate(self.train_dataset.batch(self.batch_size)):
-                # for i in range(len(inputs)):
+                #  attack
+                if self.ismalice and self.attack_method == 'label-flipping':
+                    targets = tf.where(targets == 4, 0, targets)
+                    targets = tf.where(targets == 6, 3, targets)
+                    targets = tf.where(targets == 7, 9, targets)
+                    targets = tf.where(targets == 8, 2, targets)
+                if self.ismalice and self.attack_method == 'backdoor':
+                    targets = tf.where(targets == 8, 1, targets)
+
+                #  train
                 with tf.GradientTape(persistent=True) as tape:
-                    outputs = self.local_model(inputs, training=True)
-                    loss = self.CELoss(targets, outputs)
+                    outputs = self.local_model(tf.cast(inputs, dtype=tf.float32), training=True)
+                    loss = CELoss(targets, outputs)
                 grad = tape.gradient(loss, self.local_model.trainable_weights)
-                if self.ismalice and self.attack_method == 'additive noise':
-                    grad += tf.random.normal(grad.shape) * self.noise_coeff
-
-                if flag:
-                    self.grad = grad
-                    flag = False
-                else:
-                    self.grad += grad
-
                 self.optm.apply_gradients(zip(grad, self.local_model.trainable_weights))
 
+        #  extract weights and structure
+        self.weights, self.weight_shapes = flatten(self.local_model.trainable_weights)
+        if self.ismalice and self.attack_method == 'additive noise':
+            self.weights += tf.random.normal(self.weight_shapes.shape) * self.noise_coeff
+
     def clipping_perturbation(self, C=1., sigma=1.):
-        if self.grad is None:
-            return None
-        grad, shapes = flatten(self.grad)
-        l2_norm = tf.norm(grad)
-        grad = grad / tf.maximum(1, l2_norm / C) + tf.random.normal(grad.shape, 0, sigma)
-        return grad
+        l2_norm = tf.norm(self.weights)
+        weights = self.weights / tf.maximum(1., l2_norm / C) + tf.random.normal(self.weights.shape, 0, sigma)
+        return weights
 
     def update_model(self, global_model):
         self.local_model = deepcopy(global_model)
-        self.grad = None
-
-    def CELoss(self, y_true, y_pred):
-        vector_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y_true, logits=y_pred)
-        return tf.reduce_mean(vector_loss)
-
-    def attack(self):
-        if self.attack_method == 'label-flipping':
-            pass
-        elif self.attack_method == 'backdoor':
-            pass
-        else:
-            pass

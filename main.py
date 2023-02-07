@@ -11,19 +11,19 @@ from server import Server
 
 def get_args():
     parser = argparse.ArgumentParser(description="MSFL")
-    parser.add_argument("--task", type=str, default='emnist')
-    parser.add_argument("--N", type=int, default=100,
+    parser.add_argument("--task", type=str, default='cifar10')
+    parser.add_argument("--N", type=int, default=15,
                         help="user num")
-    parser.add_argument("--Na", type=int, default=5,
+    parser.add_argument("--Na", type=int, default=1,
                         help="attacker num")
-    parser.add_argument("--M", type=int, default=10,
+    parser.add_argument("--M", type=int, default=2,
                         help="shuffler num")
     parser.add_argument("--T", type=int, default=150,
                         help="total communication round")
-    parser.add_argument("--k", type=int, default=10,
+    parser.add_argument("--k", type=int, default=5,
                         help="least user num in a shuffler")
-    parser.add_argument("--local_lr", type=float, default=0.01)
-    parser.add_argument("--global_lr", type=float, default=0.0001)
+    parser.add_argument("--local_lr", type=float, default=0.001)
+    parser.add_argument("--global_lr", type=float, default=0.001)
     parser.add_argument("--max_it", type=int, default=2,
                         help="max epoch in local train")
     parser.add_argument("--min_it", type=int, default=1,
@@ -44,21 +44,25 @@ def get_args():
                         help="rho in DMS-p")
     parser.add_argument("--DMS_h", type=float, default=0.01,
                         help="h in DMS-p")
-    parser.add_argument("--AAE_alpha", type=float, default=2,
+    parser.add_argument("--AAE_alpha", type=float, default=2.,
                         help="alpha in AAE")
     parser.add_argument("--od_method", type=str, default='all',
                         help="to od among each shuffler or all users")
     parser.add_argument("--attack_method", type=str, default='label-flipping',
                         help="label-flipping / additive noise / backdoor")
-    parser.add_argument("--noiser_coeff", type=float, default=1.,
+    parser.add_argument("--noise_coeff", type=float, default=1.,
                         help="noise amplification")
+    parser.add_argument("--VAE_beta", type=float, default=1.,
+                        help="beta for beta_VAE")
+    parser.add_argument("--VAE_capacity", type=float, default=0.,
+                        help="param capacity for beta_VAE")
     args = parser.parse_args()
     return args
 
 
 if __name__ == '__main__':
     args = get_args()
-    train_dataset, test_dataset, input_shape, num_classes = load_data(args)
+    train_dataset, test_dataset, input_shape = load_data(args)
     n_sum = 0
     ns = []
     server = Server(args, input_shape)
@@ -74,20 +78,20 @@ if __name__ == '__main__':
     malice_idset = set()
     malice_label = [0] * args.N
     for i in range(args.Na):
-        m_id = random.randint(0, args.N)
+        m_id = random.randint(0, args.N-1)
         while m_id in malice_idset:
-            m_id = random.randint(0, args.N)
+            m_id = random.randint(0, args.N-1)
         malice_idset.add(m_id)
         malice_label[m_id] = 1
 
     # split dataset to all users
     for i in range(args.N):
-        n = random.randint(200, 400)
+        n = random.randint(10, 20)
         n_sum += n
         ns.append(n)
         users.append(User(i, args, malice_label[i],
-                          train_dataset.take(n), test_dataset.take(round(n/5)),
-                          input_shape, n, num_classes))
+                          train_dataset.take(n).cache(), test_dataset.take(round(n/5)).cache(),
+                          input_shape, n))
         train_dataset = train_dataset.skip(n)
         test_dataset = test_dataset.skip(round(n/5))
 
@@ -107,8 +111,8 @@ if __name__ == '__main__':
             sid = random.randint(0, args.M-1)
             u_shufflers[sid].add_user(user)
 
-        m_shuffler.split_upload()
-        server.malice_evaluation(m_shuffler, t)
+        m_shuffler.split_upload(server)
+        server.malice_evaluation(m_shuffler, t+1)
         server.aggregate(m_shuffler, ns, n_sum)
 
         # reset every user shuffler

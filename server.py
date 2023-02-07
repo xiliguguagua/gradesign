@@ -17,12 +17,12 @@ class Server:
         self.rho = args.DMS_rho
         self.h = args.DMS_h
         self.AAE = args.AAE
-        self.alpha = args.alpha
+        self.alpha = args.AAE_alpha
         self.od_method = args.od_method
 
         if args.task == 'emnist':
             self.global_model = EmnistNet(input_shape)
-        elif args.task == 'cifar-10':
+        elif args.task == 'cifar10':
             self.global_model = Cifar10Net(input_shape)
         self.optm = tf.keras.optimizers.SGD(learning_rate=self.lr)
 
@@ -65,14 +65,17 @@ class Server:
 
     def malice_evaluation(self, m_shuffler, t):
         if self.od_method == 'all':
-            self.betaVAE.fit(m_shuffler.grads)
+            self.betaVAE.fit(m_shuffler.m_weights)
             Errs = self.betaVAE.decision_scores_
             ptr = 0
             for shflr in m_shuffler.shufflers:
-                self.calc_B(np.max(Errs[ptr:ptr + shflr.grad_num]), shflr.uids, t)
+                self.calc_B(np.max(Errs[ptr:ptr + shflr.user_num]), shflr.uids, t)
 
         elif self.od_method == 'in shuffler':
             for shflr in m_shuffler.shufflers:
-                self.betaVAE.fit(shflr.grads)
+                self.betaVAE.fit(shflr.u_weights)
                 Err_t = np.max(self.betaVAE.decision_scores_)
                 self.calc_B(Err_t, shflr.uids, t)
+
+    def rebuild_weights(self, weights):
+        rebuild(weights)

@@ -2,6 +2,7 @@ import tensorflow as tf
 import tensorflow_datasets as tfds
 from network import Cifar10Net
 from keras import backend as K
+from utils import *
 
 
 def CELoss(y_true, y_pred):
@@ -29,6 +30,9 @@ for epoch in range(200):
             outputs = net(inputs, training=True)
             loss = CELoss(targets, outputs)
         grad = tape.gradient(loss, net.trainable_weights)
+        weights = net.trainable_weights
+        fg, sg = flatten(grad)
+        fw, sw = flatten(weights)
         optm.apply_gradients(zip(grad, net.trainable_weights))
         train_sum += loss
 
