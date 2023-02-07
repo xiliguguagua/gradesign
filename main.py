@@ -120,3 +120,7 @@ if __name__ == '__main__':
         # reset every user shuffler
         for shflr in u_shufflers:
             shflr.reset()
+
+    malice_pred = np.zeros(args.N)
+    for i in server.banned_ids:
+        malice_pred[i] = 1

@@ -41,7 +41,6 @@ class User(object):
             break
 
     def local_train(self):
-        flag = True
         for _ in range(self.max_iteration):
 
             for batch_idx, (inputs, targets) in enumerate(self.train_dataset.batch(self.batch_size).cache()):
