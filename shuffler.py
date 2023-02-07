@@ -31,16 +31,20 @@ class ModelShuffler:
         self.m = args.M
         self.shufflers = None
         self.m_weights = []
+        self.ordered_uids = []
 
     def collect_usershuffler(self, shufflers):
         self.shufflers = shufflers
 
+
     def split_upload(self, server):
+        self.ordered_uids = []
         self.m_weights = []
         for shflr in self.shufflers:
             if not shflr.triggered:
                 continue
             self.m_weights += shflr.u_weights
+            self.ordered_uids += shflr.uids
 
         self.shuffle_weights()
         self.upload(server)

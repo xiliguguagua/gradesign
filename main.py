@@ -30,9 +30,9 @@ def get_args():
                         help="min epoch in local train")
     parser.add_argument("--batch_size", type=int, default=5,
                         help="batch size")
-    parser.add_argument("--DMS", type=bool, default=False,
+    parser.add_argument("--DMS", type=bool, default=True,
                         help="enbale DMS")
-    parser.add_argument("--AAE", type=bool, default=False,
+    parser.add_argument("--AAE", type=bool, default=True,
                         help="enbale AAE")
     parser.add_argument("--fA_coeff", type=float, default=0.001,
                         help="zeta in fA()")
@@ -63,9 +63,11 @@ def get_args():
 if __name__ == '__main__':
     args = get_args()
     train_dataset, test_dataset, input_shape = load_data(args)
+    global_testset = test_dataset.take(10).cache()
+    test_dataset = test_dataset.skip(10).cache()
     n_sum = 0
     ns = []
-    server = Server(args, input_shape)
+    server = Server(args, input_shape, global_testset)
     m_shuffler = ModelShuffler(args)
     u_shufflers = []
     users = []
@@ -99,21 +101,21 @@ if __name__ == '__main__':
     for t in range(args.T):
         for user in users:
             # sync global model
-            user.update_model(server.global_model)
+            user.update_model(server.global_model.get_weights())
 
             #  AAE eliminate malice users
             if args.AAE and user.id in server.banned_ids:
-                continue
+                user.prepare_weights()
+            else:   # local train
+                user.local_train()
 
-            # local train
-            user.local_train()
             # user shuffle
             sid = random.randint(0, args.M-1)
             u_shufflers[sid].add_user(user)
 
         m_shuffler.split_upload(server)
         server.malice_evaluation(m_shuffler, t+1)
-        server.aggregate(m_shuffler, ns, n_sum)
+        server.aggregate(m_shuffler, np.array(ns), n_sum)
 
         # reset every user shuffler
         for shflr in u_shufflers:

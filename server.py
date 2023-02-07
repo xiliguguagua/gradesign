@@ -8,7 +8,7 @@ from network import EmnistNet, Cifar10Net
 
 class Server:
 
-    def __init__(self, args, input_shape):
+    def __init__(self, args, input_shape, test_dataset):
         self.lr = args.global_lr
         self.zeta = args.fA_coeff
         self.ell = args.fC_coeff
@@ -24,6 +24,7 @@ class Server:
             self.global_model = EmnistNet(input_shape)
         elif args.task == 'cifar10':
             self.global_model = Cifar10Net(input_shape)
+        self.test_dataset = test_dataset
         self.optm = tf.keras.optimizers.SGD(learning_rate=self.lr)
 
         self.betaVAE = vae.VAE(gamma=args.VAE_beta, capacity=args.VAE_capacity)
@@ -33,8 +34,15 @@ class Server:
 
         self.banned_ids = set()
 
+        for (inputs, targets) in self.test_dataset.batch(1).cache():
+            outputs = self.global_model(tf.cast(inputs, dtype=tf.float32))
+            break
+
+        self.sync_weights = self.global_model.trainable_weights
+
     def aggregate(self, m_shuffler, ns, n_sum):
-        aggregated_grad = tf.zeros(m_shuffler.grads[0].shape)
+        aggregated_weights, shapes = flatten(self.global_model.trainable_weights)
+        aggregated_weights -= self.lr * aggregated_weights
 
         ratios = ns / n_sum
         B_sum = np.dot(ns, np.power(self.B, -self.h))
@@ -51,10 +59,11 @@ class Server:
                     self.banned_ids.add(idx)
                     ratios[idx] = 0
 
-        for r, g in zip(ratios, m_shuffler.grads):
-            aggregated_grad += r * g
+        for uid, g in zip(m_shuffler.ordered_uids, m_shuffler.m_weights):
+            aggregated_weights += self.lr * ratios[uid] * g
 
-        self.optm.apply_gradients(zip(aggregated_grad, self.global_model.trainable_weights))
+        new_weights = reconstruct(aggregated_weights, shapes)
+        self.global_model.set_weights(new_weights)
 
     def calc_B(self, Err_t, uids, t):
         for uid in uids:
@@ -70,6 +79,7 @@ class Server:
             ptr = 0
             for shflr in m_shuffler.shufflers:
                 self.calc_B(np.max(Errs[ptr:ptr + shflr.user_num]), shflr.uids, t)
+                ptr += shflr.user_num
 
         elif self.od_method == 'in shuffler':
             for shflr in m_shuffler.shufflers:

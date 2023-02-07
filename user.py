@@ -36,11 +36,15 @@ class User(object):
         self.test_dataset = test_dataset
         self.grad = None
 
+        for (inputs, targets) in self.test_dataset.batch(1).cache():
+            outputs = self.local_model(tf.cast(inputs, dtype=tf.float32))
+            break
+
     def local_train(self):
         flag = True
         for _ in range(self.max_iteration):
 
-            for batch_idx, (inputs, targets) in enumerate(self.train_dataset.batch(self.batch_size)):
+            for batch_idx, (inputs, targets) in enumerate(self.train_dataset.batch(self.batch_size).cache()):
                 #  attack
                 if self.ismalice and self.attack_method == 'label-flipping':
                     targets = tf.where(targets == 4, 0, targets)
@@ -67,5 +71,8 @@ class User(object):
         weights = self.weights / tf.maximum(1., l2_norm / C) + tf.random.normal(self.weights.shape, 0, sigma)
         return weights
 
-    def update_model(self, global_model):
-        self.local_model = deepcopy(global_model)
+    def update_model(self, global_weights):
+        self.local_model.set_weights(global_weights)
+
+    def prepare_weights(self):
+        self.weights, self.weight_shapes = flatten(self.local_model.trainable_weights)
