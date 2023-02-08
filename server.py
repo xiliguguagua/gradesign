@@ -1,8 +1,12 @@
 import tensorflow as tf
 import numpy as np
+import pandas as pd
 from pyod.models import vae
+from sklearn.metrics import confusion_matrix
 
 from utils import *
+import cai.mobilenet
+import cai.layers
 from network import EmnistNet, Cifar10Net
 
 
@@ -23,7 +27,8 @@ class Server:
         if args.task == 'emnist':
             self.global_model = EmnistNet(input_shape)
         elif args.task == 'cifar10':
-            self.global_model = Cifar10Net(input_shape)
+            self.global_model = cai.mobilenet.kMobileNet(include_top=True, weights=None, input_shape=input_shape,
+                                                        pooling=None, classes=10, kType=cai.layers.D6_16ch())
         self.test_dataset = test_dataset
         self.optm = tf.keras.optimizers.SGD(learning_rate=self.lr)
 
@@ -39,6 +44,9 @@ class Server:
             break
 
         self.sync_weights = self.global_model.trainable_weights
+        self.loss_record = []
+        self.acc_record = []
+        self.confusion_record = []
 
     def aggregate(self, m_shuffler, ns, n_sum):
         aggregated_weights, shapes = flatten(self.global_model.trainable_weights)
@@ -64,6 +72,31 @@ class Server:
 
         new_weights = reconstruct(aggregated_weights, shapes)
         self.global_model.set_weights(new_weights)
+
+        self.global_test()
+
+    def global_test(self):
+        y_pred = []
+        y_true = []
+        global_loss = 0
+        for idx, (inputs, targets) in enumerate(self.test_dataset.batch(1).cache()):
+            outputs = self.global_model(tf.cast(inputs, dtype=tf.float32), training=False)
+            global_loss += CELoss(targets, outputs)
+            y_pred.append(tf.argmax(outputs[0]))
+            y_true.append(targets[0])
+        global_loss /= idx + 1
+        self.loss_record.append(global_loss)
+        acc = tf.reduce_mean(tf.cast(tf.equal(y_true, y_pred) , dtype=tf.float32))
+        self.acc_record.append(acc)
+        c = confusion_matrix(y_true, y_pred)
+        df = pd.DataFrame(c)
+        df.to_csv('./logs/confusion@acc_{}.csv'.format(acc))
+
+    def output_logs(self):
+        df = pd.DataFrame(self.loss_record)
+        df.to_csv('./logs/loss.csv')
+        df = pd.DataFrame(self.acc_record)
+        df.to_csv('./logs/acc.csv')
 
     def calc_B(self, Err_t, uids, t):
         for uid in uids:

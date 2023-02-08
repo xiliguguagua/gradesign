@@ -4,6 +4,8 @@ from keras import backend
 from copy import deepcopy
 
 from utils import *
+import cai.mobilenet
+import cai.layers
 from network import EmnistNet, Cifar10Net
 
 
@@ -30,7 +32,8 @@ class User(object):
         if args.task == 'emnist':
             self.local_model = EmnistNet(input_shape)
         elif args.task == 'cifar10':
-            self.local_model = Cifar10Net(input_shape)
+            self.local_model = cai.mobilenet.kMobileNet(include_top=True, weights=None, input_shape=input_shape,
+                                                        pooling=None, classes=10, kType=cai.layers.D6_16ch())
         self.optm = tf.keras.optimizers.SGD(learning_rate=self.lr)
         self.train_dataset = train_dataset
         self.test_dataset = test_dataset
@@ -41,8 +44,9 @@ class User(object):
             break
 
     def local_train(self):
+        best_loss = 1e10
         for _ in range(self.max_iteration):
-
+            valid_loss = 0
             for batch_idx, (inputs, targets) in enumerate(self.train_dataset.batch(self.batch_size).cache()):
                 #  attack
                 if self.ismalice and self.attack_method == 'label-flipping':
@@ -59,6 +63,22 @@ class User(object):
                     loss = CELoss(targets, outputs)
                 grad = tape.gradient(loss, self.local_model.trainable_weights)
                 self.optm.apply_gradients(zip(grad, self.local_model.trainable_weights))
+
+            for (inputs, targets) in self.test_dataset.batch(self.batch_size).cache():
+                if self.ismalice and self.attack_method == 'label-flipping':
+                    targets = tf.where(targets == 4, 0, targets)
+                    targets = tf.where(targets == 6, 3, targets)
+                    targets = tf.where(targets == 7, 9, targets)
+                    targets = tf.where(targets == 8, 2, targets)
+                if self.ismalice and self.attack_method == 'backdoor':
+                    targets = tf.where(targets == 8, 1, targets)
+                outputs = self.local_model(tf.cast(inputs, dtype=tf.float32), training=False)
+                valid_loss += CELoss(targets, outputs)
+
+            if _ > self.min_iteration and valid_loss > best_loss:
+                break
+            if valid_loss < best_loss:
+                best_loss = valid_loss
 
         #  extract weights and structure
         self.weights, self.weight_shapes = flatten(self.local_model.trainable_weights)

@@ -3,7 +3,9 @@ import tensorflow_datasets as tfds
 from network import Cifar10Net
 from keras import backend as K
 from utils import *
-
+import cai
+import cai.mobilenet
+import cai.layers
 
 def CELoss(y_true, y_pred):
     vector_loss = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=y_true, logits=y_pred)
@@ -12,7 +14,14 @@ def CELoss(y_true, y_pred):
 ds, info = tfds.load("cifar10", data_dir='../dataset/', as_supervised=True, with_info=True)
 
 input_shape = info.features.shape['image']
-net = Cifar10Net(input_shape)
+# net = Cifar10Net(input_shape)
+net = cai.mobilenet.kMobileNet(
+  include_top=True,
+  weights=None,
+  input_shape=input_shape,
+  pooling=None,
+  classes=10,
+  kType=cai.layers.D6_16ch())
 
 train_dataset, test_dataset = ds['train'].take(200), ds['test'].take(40)
 

@@ -123,8 +123,9 @@ if __name__ == '__main__':
         for shflr in u_shufflers:
             shflr.reset()
 
+    server.output_logs()
     malice_pred = np.zeros(args.N)
     for i in server.banned_ids:
         malice_pred[i] = 1
 
-    print(classification_report(malice_label, malice_pred), target_names=['benign', 'malice'])
+    print(classification_report(malice_label, malice_pred, target_names=['benign', 'malice']))
