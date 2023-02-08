@@ -1,0 +1,14 @@
+CIFAR-10=32*32*3
+emnist=28*28*1
+class pyod.models.vae.VAE(gamma=1.0) larger beta makes simpler q(z|x) and trans less infomation
+
+epoch-80; lr-0.3(0~70); lr-0.18(70~80);
+
+
+1.伪代码中花体U代指什么，前文中提到用以代替U_t^m，显然此处不能代表此含义(未被eliminate的user集？)
+2.模型w添加混淆Y时使用的C与sigma分别具体如何得出。C=所有没有截断过的w模长取中位数(W_t^m中所有w的模长取中位数？)，sigma=与W_t^m中数据分布离散程度呈正比(各维度方差？)
+3.截断与混淆的时机，伪代码中指出每个epoch后都需要截断混淆后再进行下一个epoch，但此时还没有分配user到user_shuffler中，上述猜测的方法无法使用
+4.beta-VAE每次使用1个user_shuffler中w做异常检测，还是使用所有w做异常检测再分shuffler计算最大值
+5.标签翻转攻击细节，是否需要对所有样本的标签翻转，是否要将某一类翻转到固定的另一类(这样和后面攻击的区别)
+6.model evaluation中的epsilon大小由何控制(可能是差分隐私内容，待补习)
+7.恶意评估中fC()累计恶意评估使用了FLAG，与outlier在不同user_shuffler中的次数，outlier的判定方式(直接根据VAE结果设定阈值判定？)

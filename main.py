@@ -2,6 +2,8 @@ import argparse
 import random
 
 import numpy as np
+from sklearn.metrics import classification_report
+from sklearn.metrics import confusion_matrix
 
 from utils import *
 from shuffler import UserShuffler, ModelShuffler
@@ -12,15 +14,15 @@ from server import Server
 def get_args():
     parser = argparse.ArgumentParser(description="MSFL")
     parser.add_argument("--task", type=str, default='cifar10')
-    parser.add_argument("--N", type=int, default=15,
+    parser.add_argument("--N", type=int, default=15,  # ----------------------------------------------------------------
                         help="user num")
-    parser.add_argument("--Na", type=int, default=1,
+    parser.add_argument("--Na", type=int, default=1,  # ----------------------------------------------------------------
                         help="attacker num")
-    parser.add_argument("--M", type=int, default=2,
+    parser.add_argument("--M", type=int, default=2,  # -----------------------------------------------------------------
                         help="shuffler num")
     parser.add_argument("--T", type=int, default=150,
                         help="total communication round")
-    parser.add_argument("--k", type=int, default=5,
+    parser.add_argument("--k", type=int, default=5,  # -----------------------------------------------------------------
                         help="least user num in a shuffler")
     parser.add_argument("--local_lr", type=float, default=0.001)
     parser.add_argument("--global_lr", type=float, default=0.001)
@@ -63,8 +65,8 @@ def get_args():
 if __name__ == '__main__':
     args = get_args()
     train_dataset, test_dataset, input_shape = load_data(args)
-    global_testset = test_dataset.take(10).cache()
-    test_dataset = test_dataset.skip(10).cache()
+    global_testset = test_dataset.take(10).cache()  # ------------------------------------------------------------------
+    test_dataset = test_dataset.skip(10).cache()  # --------------------------------------------------------------------
     n_sum = 0
     ns = []
     server = Server(args, input_shape, global_testset)
@@ -88,7 +90,7 @@ if __name__ == '__main__':
 
     # split dataset to all users
     for i in range(args.N):
-        n = random.randint(10, 20)
+        n = random.randint(10, 20)  # ----------------------------------------------------------------------------------
         n_sum += n
         ns.append(n)
         users.append(User(i, args, malice_label[i],
@@ -124,3 +126,5 @@ if __name__ == '__main__':
     malice_pred = np.zeros(args.N)
     for i in server.banned_ids:
         malice_pred[i] = 1
+
+    print(classification_report(malice_label, malice_pred), target_names=['benign', 'malice'])
