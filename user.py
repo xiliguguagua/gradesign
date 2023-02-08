@@ -32,8 +32,8 @@ class User(object):
         if args.task == 'emnist':
             self.local_model = EmnistNet(input_shape)
         elif args.task == 'cifar10':
-            self.local_model = cai.mobilenet.kMobileNet(include_top=True, weights=None, input_shape=input_shape,
-                                                        pooling=None, classes=10, kType=cai.layers.D6_16ch())
+            self.local_model = Cifar10Net(input_shape) #cai.mobilenet.kMobileNet(include_top=True, weights=None, input_shape=input_shape,
+                                                       # pooling=None, classes=10, kType=cai.layers.D6_16ch())
         self.optm = tf.keras.optimizers.SGD(learning_rate=self.lr)
         self.train_dataset = train_dataset
         self.test_dataset = test_dataset

@@ -20,7 +20,7 @@ def get_args():
                         help="attacker num")
     parser.add_argument("--M", type=int, default=2,  # -----------------------------------------------------------------
                         help="shuffler num")
-    parser.add_argument("--T", type=int, default=150,
+    parser.add_argument("--T", type=int, default=2,
                         help="total communication round")
     parser.add_argument("--k", type=int, default=5,  # -----------------------------------------------------------------
                         help="least user num in a shuffler")

@@ -27,8 +27,8 @@ class Server:
         if args.task == 'emnist':
             self.global_model = EmnistNet(input_shape)
         elif args.task == 'cifar10':
-            self.global_model = cai.mobilenet.kMobileNet(include_top=True, weights=None, input_shape=input_shape,
-                                                        pooling=None, classes=10, kType=cai.layers.D6_16ch())
+            self.global_model = Cifar10Net(input_shape) #cai.mobilenet.kMobileNet(include_top=True, weights=None, input_shape=input_shape,
+                                                        #pooling=None, classes=10, kType=cai.layers.D6_16ch())
         self.test_dataset = test_dataset
         self.optm = tf.keras.optimizers.SGD(learning_rate=self.lr)
 
