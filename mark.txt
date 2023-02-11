@@ -8,8 +8,6 @@ epoch-80; lr-0.3(0~70); lr-0.18(70~80);
 1.伪代码中花体U代指什么，前文中提到用以代替U_t^m，显然此处不能代表此含义(未被eliminate的user集？)
 
 4.beta-VAE每次使用1个user_shuffler中w做异常检测，还是使用所有w做异常检测再分shuffler计算最大值
-  beta-VAE消耗资源太大，需要申请o(n^2)空间，n为weights维度，16G内存pc需控制在12w/0.12M以内，参考文献中(cifar10)使用的网络为5000w/50M
+  beta-VAE消耗资源太大，需要申请o(n^2)空间，n为weights维度，16G内存pc需控制在120,000/0.12M以内，参考文献中(cifar10)使用的网络为50,000,000/50M
 
 5.标签翻转攻击细节，是否需要对所有样本的标签翻转，是否要将某一类翻转到固定的另一类(Data poisoning attacks against federated learning systems;这样和后门攻击的区别)
-
-^7.恶意评估中fC()累计恶意评估使用了FLAG=与outlier在不同user_shuffler中的次数，outlier的判定方式(直接根据VAE结果设定阈值判定？)

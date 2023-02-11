@@ -98,8 +98,9 @@ class Server:
         df = pd.DataFrame(self.acc_record)
         df.to_csv('./logs/acc.csv')
 
-    def calc_B(self, Err_t, uids, t):
+    def calc_B(self, Err_t, uids, t, has_outlier):
         for uid in uids:
+            self.Flag_sum[uid] += 1 - has_outlier  # no outlier Flag=1 ; otherwise Flag=0
             self.Err_sum[uid] += Err_t
             fA = np.maximum(self.zeta * self.Err_sum[uid], 0) / t  # Accumulated malice mass factor
             fC = np.maximum(t - self.ell * self.Flag_sum[uid], 0) / t  # Continuous malice factor
@@ -109,16 +110,18 @@ class Server:
         if self.od_method == 'all':
             self.betaVAE.fit(m_shuffler.m_weights)
             Errs = self.betaVAE.decision_scores_
+            outlier_labels = self.betaVAE.labels_
             ptr = 0
             for shflr in m_shuffler.shufflers:
-                self.calc_B(np.max(Errs[ptr:ptr + shflr.user_num]), shflr.uids, t)
+                self.calc_B(np.max(Errs[ptr:ptr + shflr.user_num]), shflr.uids, t, np.max(outlier_labels[ptr:ptr + shflr.user_num]))
                 ptr += shflr.user_num
 
         elif self.od_method == 'in shuffler':
             for shflr in m_shuffler.shufflers:
                 self.betaVAE.fit(shflr.u_weights)
                 Err_t = np.max(self.betaVAE.decision_scores_)
-                self.calc_B(Err_t, shflr.uids, t)
+                outlier_labels = self.betaVAE.labels_
+                self.calc_B(Err_t, shflr.uids, t, np.max(outlier_labels))
 
     def rebuild_weights(self, weights):
         rebuild(weights)
