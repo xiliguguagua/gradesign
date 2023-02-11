@@ -95,7 +95,7 @@ if __name__ == '__main__':
 
     # split dataset to all users
     for i in range(args.N):
-        n = random.randint(10, 20)  # ----------------------------------------------------------------------------------
+        n = 10  # random.randint(10, 20)  ------------------------------------------------------------------------------
         n_sum += n
         ns.append(n)
         dp_delta = 2 * args.clip / n
