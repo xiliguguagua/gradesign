@@ -2,6 +2,7 @@ import argparse
 import random
 
 import numpy as np
+from tensorflow_privacy.privacy.analysis.compute_noise_from_budget_lib import compute_noise
 from sklearn.metrics import classification_report
 from sklearn.metrics import confusion_matrix
 
@@ -13,7 +14,7 @@ from server import Server
 
 def get_args():
     parser = argparse.ArgumentParser(description="MSFL")
-    parser.add_argument("--task", type=str, default='cifar10')
+    parser.add_argument("--task", type=str, default='emnist/mnist')
     parser.add_argument("--N", type=int, default=15,  # ----------------------------------------------------------------
                         help="user num")
     parser.add_argument("--Na", type=int, default=1,  # ----------------------------------------------------------------
@@ -32,6 +33,10 @@ def get_args():
                         help="min epoch in local train")
     parser.add_argument("--batch_size", type=int, default=5,
                         help="batch size")
+    parser.add_argument("--clip", type=float, default=1.,
+                        help="weight norm2 clip")
+    parser.add_argument("--epsilon", type=float, default=1.,
+                        help="epsilon in (epsilon, delta)-DP")
     parser.add_argument("--DMS", type=bool, default=True,
                         help="enbale DMS")
     parser.add_argument("--AAE", type=bool, default=True,
@@ -93,9 +98,12 @@ if __name__ == '__main__':
         n = random.randint(10, 20)  # ----------------------------------------------------------------------------------
         n_sum += n
         ns.append(n)
+        dp_delta = 2 * args.clip / n
+        sigma = compute_noise(n, args.batch_size, args.epsilon, args.max_it * args.T,
+                              dp_delta, 1e-5)
         users.append(User(i, args, malice_label[i],
                           train_dataset.take(n).cache(), test_dataset.take(round(n/5)).cache(),
-                          input_shape, n))
+                          input_shape, n, sigma))
         train_dataset = train_dataset.skip(n)
         test_dataset = test_dataset.skip(round(n/5))
 

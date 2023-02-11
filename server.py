@@ -24,7 +24,7 @@ class Server:
         self.alpha = args.AAE_alpha
         self.od_method = args.od_method
 
-        if args.task == 'emnist':
+        if args.task == 'emnist/mnist':
             self.global_model = EmnistNet(input_shape)
         elif args.task == 'cifar10':
             self.global_model = Cifar10Net(input_shape) #cai.mobilenet.kMobileNet(include_top=True, weights=None, input_shape=input_shape,

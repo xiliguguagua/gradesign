@@ -11,7 +11,7 @@ from network import EmnistNet, Cifar10Net
 
 class User(object):
 
-    def __init__(self, uid, args, is_m, train_dataset, test_dataset, input_shape, n):
+    def __init__(self, uid, args, is_m, train_dataset, test_dataset, input_shape, n, sigma):
         super(User, self).__init__()
         self.id = uid
         self.lr = args.local_lr
@@ -28,8 +28,10 @@ class User(object):
             self.noise_coeff = 0
         self.weights = None
         self.weight_shapes = None
+        self.clip = args.clip
+        self.sigma = sigma
 
-        if args.task == 'emnist':
+        if args.task == 'emnist/mnist':
             self.local_model = EmnistNet(input_shape)
         elif args.task == 'cifar10':
             self.local_model = Cifar10Net(input_shape) #cai.mobilenet.kMobileNet(include_top=True, weights=None, input_shape=input_shape,
@@ -47,6 +49,7 @@ class User(object):
         best_loss = 1e10
         for _ in range(self.max_iteration):
             valid_loss = 0
+            #  train
             for batch_idx, (inputs, targets) in enumerate(self.train_dataset.batch(self.batch_size).cache()):
                 #  attack
                 if self.ismalice and self.attack_method == 'label-flipping':
@@ -57,37 +60,42 @@ class User(object):
                 if self.ismalice and self.attack_method == 'backdoor':
                     targets = tf.where(targets == 8, 1, targets)
 
-                #  train
+                #  optimize
                 with tf.GradientTape(persistent=True) as tape:
                     outputs = self.local_model(tf.cast(inputs, dtype=tf.float32), training=True)
                     loss = CELoss(targets, outputs)
                 grad = tape.gradient(loss, self.local_model.trainable_weights)
                 self.optm.apply_gradients(zip(grad, self.local_model.trainable_weights))
 
-            for (inputs, targets) in self.test_dataset.batch(self.batch_size).cache():
-                if self.ismalice and self.attack_method == 'label-flipping':
-                    targets = tf.where(targets == 4, 0, targets)
-                    targets = tf.where(targets == 6, 3, targets)
-                    targets = tf.where(targets == 7, 9, targets)
-                    targets = tf.where(targets == 8, 2, targets)
-                if self.ismalice and self.attack_method == 'backdoor':
-                    targets = tf.where(targets == 8, 1, targets)
-                outputs = self.local_model(tf.cast(inputs, dtype=tf.float32), training=False)
-                valid_loss += CELoss(targets, outputs)
+                #  clipping & perturbation
+                self.weights, self.weight_shapes = flatten(self.local_model.trainable_weights)
+                self.clipping_perturbation()
+                new_weights = reconstruct(self.weights, self.weight_shapes)
+                self.local_model.set_weights(new_weights)
 
-            if _ > self.min_iteration and valid_loss > best_loss:
-                break
-            if valid_loss < best_loss:
-                best_loss = valid_loss
+            # #  validation
+            # for (inputs, targets) in self.test_dataset.batch(self.batch_size).cache():
+            #     if self.ismalice and self.attack_method == 'label-flipping':
+            #         targets = tf.where(targets == 4, 0, targets)
+            #         targets = tf.where(targets == 6, 3, targets)
+            #         targets = tf.where(targets == 7, 9, targets)
+            #         targets = tf.where(targets == 8, 2, targets)
+            #     if self.ismalice and self.attack_method == 'backdoor':
+            #         targets = tf.where(targets == 8, 1, targets)
+            #     outputs = self.local_model(tf.cast(inputs, dtype=tf.float32), training=False)
+            #     valid_loss += CELoss(targets, outputs)
+            #
+            # if _ > self.min_iteration and valid_loss > best_loss:
+            #     break
+            # if valid_loss < best_loss:
+            #     best_loss = valid_loss
 
-        #  extract weights and structure
-        self.weights, self.weight_shapes = flatten(self.local_model.trainable_weights)
         if self.ismalice and self.attack_method == 'additive noise':
             self.weights += tf.random.normal(self.weight_shapes.shape) * self.noise_coeff
 
-    def clipping_perturbation(self, C=1., sigma=1.):
+    def clipping_perturbation(self):
         l2_norm = tf.norm(self.weights)
-        weights = self.weights / tf.maximum(1., l2_norm / C) + tf.random.normal(self.weights.shape, 0, sigma)
+        weights = self.weights / tf.maximum(1., l2_norm / self.clip) + tf.random.normal(self.weights.shape, 0, self.sigma)
         return weights
 
     def update_model(self, global_weights):
