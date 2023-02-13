@@ -1,24 +1,25 @@
 import numpy as np
 from utils import *
 
+
 class UserShuffler:
 
     def __init__(self, args):
         self.k = args.k
-        self.uids = set()
+        self.uids = []
         self.u_weights = []
         self.user_num = 0
         self.triggered = False
 
     def add_user(self, user):
-        self.uids.add(user.id)
+        self.uids.append(user.id)
         self.user_num += 1
         if self.user_num >= self.k:
             self.triggered = True
         self.u_weights.append(user.weights)
 
     def reset(self):
-        self.uids.clear()
+        self.uids = []
         self.u_weights = []
         self.user_num = 0
         self.triggered = False
@@ -34,7 +35,6 @@ class ModelShuffler:
 
     def collect_usershuffler(self, shufflers):
         self.shufflers = shufflers
-
 
     def split_upload(self, server):
         self.ordered_idsets = []
