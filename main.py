@@ -113,7 +113,7 @@ if __name__ == '__main__':
             # sync global model
             user.update_model(server.global_model.get_weights())
 
-            #  AAE eliminate malice users
+            # AAE eliminate malice users
             if args.AAE and user.id in server.banned_ids:
                 user.prepare_weights()
             else:   # local train

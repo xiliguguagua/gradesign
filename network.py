@@ -5,49 +5,62 @@ class EmnistNet(tf.keras.Model):
 
     def __init__(self, input_shape):
         super(EmnistNet, self).__init__()
-        self.conv_1 = tf.keras.layers.Conv2D(16, 8, strides=2, padding='same', activation='tanh', input_shape=input_shape)
-        self.conv_2 = tf.keras.layers.Conv2D(32, 4, strides=2, padding='valid', activation='tanh')
-        self.maxp_1 = tf.keras.layers.MaxPool2D(2, 1)
-        self.maxp_2 = tf.keras.layers.MaxPool2D(2, 1)
-        self.dense1 = tf.keras.layers.Dense(32, activation='tanh')
-        self.dense2 = tf.keras.layers.Dense(10)
+        self.first_fc = tf.keras.layers.Dense(392, activation='ReLU')
+        self.last_fc = tf.keras.layers.Dense(10)
 
     def call(self, inputs, train=None, mask=None):
-        out = self.conv_1(inputs)
-        out = self.maxp_1(out)
-        out = self.conv_2(out)
-        out = self.maxp_2(out)
-        out = tf.keras.layers.Flatten()(out)
-        out = self.dense1(out)
-        out = self.dense2(out)
+        out = tf.keras.layers.Flatten()(inputs)
+        out = self.first_fc(out)
+        out = self.last_fc(out)
         return out
 
 class Cifar10Net(tf.keras.Model):
 
     def __init__(self, input_shape):
         super(Cifar10Net, self).__init__()
-        self.conv_1 = tf.keras.layers.Conv2D(32, 3, strides=2, padding='valid', activation='tanh', input_shape=input_shape)
-        self.conv_2 = tf.keras.layers.Conv2D(32, 3, strides=1, activation='tanh')
-        self.conv_3 = tf.keras.layers.Conv2D(64, 3, strides=1, activation='tanh')
-        self.conv_4 = tf.keras.layers.Conv2D(64, 3, strides=1, activation='tanh')
-        self.conv_5 = tf.keras.layers.Conv2D(128, 3, strides=1, activation='tanh')
-        self.conv_6 = tf.keras.layers.Conv2D(128, 3, strides=1, activation='tanh')
-        self.conv_7 = tf.keras.layers.Conv2D(10, 3, strides=1, activation='tanh')
-        self.maxp_1 = tf.keras.layers.MaxPool2D(4, 2) #-----------------------------------------------------------------
-        self.maxp_2 = tf.keras.layers.MaxPool2D(4, 2) #-----------------------------------------------------------------
-        self.dense_1 = tf.keras.layers.Dense(1024)
-        self.dense_2 = tf.keras.layers.Dense(10)
+        self.conv = tf.keras.layers.Conv2D(16, 3, strides=1, padding='same', use_bias=False, input_shape=input_shape)
+        self.bn = tf.keras.layers.BatchNormalization()
+        self.relu = tf.keras.layers.ReLU()
 
-    def call(self, inputs):
-        out = self.conv_1(inputs)
-        # out = self.conv_2(out)
-        out = self.maxp_1(out)
-        # out = self.conv_3(out)
-        # out = self.conv_4(out)
-        out = self.maxp_2(out)
-        # out = self.conv_5(out)
-        # out = self.conv_6(out)
+        self.block1 = ResBlock(16, 1, False)
+        self.block2 = ResBlock(32, 2, True)
+        self.block3 = ResBlock(64, 2, True)
+
+        self.avgpool = tf.keras.layers.AvgPool2D(2)
+        self.fc = tf.keras.layers.Dense(10)
+
+
+    def call(self, inputs,  train=None, mask=None):
+        out = self.relu(self.bn(self.conv_1(inputs)))
+        out = self.block1(out)
+        out = self.block2(out)
+        out = self.block3(out)
+        out = self.avgpool(out)
         out = tf.keras.layers.Flatten()(out)
-        # out = self.dense_1(out)
-        out = self.dense_2(out)
+        out = self.fc(out)
+        return out
+
+class ResBlock(tf.keras.Model):
+
+    def __init__(self, channel, stride, pad):
+        super(ResBlock, self).__init__()
+        self.pad = pad
+        self.channel = channel
+        self.conv_1 = tf.keras.layers.Conv2D(channel, 3, strides=stride, padding='same', use_bias=False)
+        self.bn_1 = tf.keras.layers.BatchNormalization()
+        self.conv_2 = tf.keras.layers.Conv2D(channel, 3, strides=1, padding='same', use_bias=False)
+        self.bn_2 = tf.keras.layers.BatchNormalization()
+        self.relu = tf.keras.layers.ReLU()
+
+    def call(self, inputs, train=None, mask=None):
+        out = self.relu(self.bn_1(self.conv_1(inputs)))
+        out = self.bn_2(self.conv_2(out))
+
+        if self.pad:
+            pad = (0, self.channel//4, self.channel//4, 0)
+            out += tf.pad(inputs[:, ::2, ::2, :], pad, 'constant')
+        else:
+            out += inputs
+
+        out = self.relu(out)
         return out
