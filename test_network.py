@@ -4,13 +4,14 @@ import random
 import numpy as np
 from tensorflow_privacy.privacy.analysis.compute_noise_from_budget_lib import compute_noise
 from sklearn.metrics import classification_report
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, accuracy_score
 
 from utils import *
 from shuffler import UserShuffler, ModelShuffler
 from user import User
 from server import Server
 
+from network import *
 
 def get_args():
     parser = argparse.ArgumentParser(description="MSFL")
@@ -25,7 +26,7 @@ def get_args():
                         help="total communication round")
     parser.add_argument("--k", type=int, default=5,  # -----------------------------------------------------------------
                         help="least user num in a shuffler")
-    parser.add_argument("--local_lr", type=float, default=0.1)
+    parser.add_argument("--local_lr", type=float, default=0.001)
     parser.add_argument("--global_lr", type=float, default=0.001)
     parser.add_argument("--epoch", type=int, default=100,
                         help="max epoch in local train")
@@ -68,70 +69,28 @@ def get_args():
 if __name__ == '__main__':
     args = get_args()
     train_dataset, test_dataset, input_shape = load_data(args)
-    global_testset = test_dataset.take(100).cache()  # ------------------------------------------------------------------
-    test_dataset = test_dataset.skip(100).cache()  # --------------------------------------------------------------------
-    n_sum = 0
-    ns = []
-    server = Server(args, input_shape, global_testset)
-    m_shuffler = ModelShuffler(args)
-    u_shufflers = []
-    users = []
+    # train_dataset = train_dataset.take(300).cache()
+    # test_dataset = test_dataset.take(60).cache()
+    model = Cifar10Net(input_shape)
+    optm = tf.keras.optimizers.Adam(learning_rate=args.local_lr, weight_decay=0.0001)
 
-    for i in range(args.M):
-        u_shufflers.append(UserShuffler(args))
-    m_shuffler.collect_usershuffler(u_shufflers)
+    norm = []
+    for _ in range(args.epoch):
+        for batch_idx, (inputs, targets) in enumerate(train_dataset.batch(args.batch_size).cache()):
 
-    # generate malice user id
-    malice_idset = set()
-    malice_label = [0] * args.N
-    for i in range(args.Na):
-        m_id = random.randint(0, args.N-1)
-        while m_id in malice_idset:
-            m_id = random.randint(0, args.N-1)
-        malice_idset.add(m_id)
-        malice_label[m_id] = 1
+            with tf.GradientTape(persistent=True) as tape:
+                outputs = model(tf.cast(inputs, dtype=tf.float32), training=True)
+                loss = CELoss(targets, outputs)
+            grad = tape.gradient(loss, model.trainable_weights)
+            optm.apply_gradients(zip(grad, model.trainable_weights))
+            weights, weight_shapes = flatten(model.trainable_weights)
 
-    # split dataset to all users
-    for i in range(args.N):
-        n = 300  # random.randint(10, 20)  ------------------------------------------------------------------------------
-        n_sum += n
-        ns.append(n)
-        dp_delta = 2 * args.clip / n
-        sigma = compute_noise(n, args.batch_size, args.epsilon, args.epoch * args.T,
-                              dp_delta, 1e-5)
-        users.append(User(i, args, malice_label[i],
-                          train_dataset.take(n).cache(), test_dataset.take(round(n/5)).cache(),
-                          input_shape, n, sigma))
-        train_dataset = train_dataset.skip(n).cache()
-        test_dataset = test_dataset.skip(round(n/5)).cache()
-
-    # each communication turn
-    for t in range(args.T):
-        for user in users:
-            # sync global model
-            user.update_model(server.global_model.get_weights())
-
-            # AAE eliminate malice users
-            if args.AAE and user.id in server.banned_ids:
-                user.prepare_weights()
-            else:   # local train
-                user.local_train()
-
-            # user shuffle
-            sid = random.randint(0, args.M-1)
-            u_shufflers[sid].add_user(user)
-
-        m_shuffler.split_upload(server)
-        server.malice_evaluation(m_shuffler, t+1)
-        server.aggregate(m_shuffler, np.array(ns), n_sum)
-
-        # reset every user shuffler
-        for shflr in u_shufflers:
-            shflr.reset()
-
-    server.output_logs()
-    malice_pred = np.zeros(args.N)
-    for i in server.banned_ids:
-        malice_pred[i] = 1
-
-    print(classification_report(malice_label, malice_pred, target_names=['benign', 'malice']))
+        pred = []
+        true = []
+        test_loss = []
+        for batch_idx, (input, target) in enumerate(test_dataset.batch(args.batch_size).cache()):
+            output = model(tf.cast(input, dtype=tf.float32), training=False)
+            pred.append(tf.argmax(output[0]))
+            true.append(target[0])
+            test_loss.append(CELoss(target, output))
+        print('epoch {} test_loss {} acc{}'.format(_, sum(test_loss)/len(test_loss), accuracy_score(true, pred)))

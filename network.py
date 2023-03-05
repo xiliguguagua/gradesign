@@ -5,13 +5,22 @@ class EmnistNet(tf.keras.Model):
 
     def __init__(self, input_shape):
         super(EmnistNet, self).__init__()
-        self.first_fc = tf.keras.layers.Dense(392, activation='ReLU')
-        self.last_fc = tf.keras.layers.Dense(10)
+        self.conv_1 = tf.keras.layers.Conv2D(16, 8, strides=2, padding='same', activation='ReLU',
+                                             input_shape=input_shape)
+        self.conv_2 = tf.keras.layers.Conv2D(32, 4, strides=2, padding='valid', activation='ReLU')
+        self.maxp_1 = tf.keras.layers.MaxPool2D(2, 1)
+        self.maxp_2 = tf.keras.layers.MaxPool2D(2, 1)
+        self.dense1 = tf.keras.layers.Dense(32, activation='tanh')
+        self.dense2 = tf.keras.layers.Dense(10)
 
     def call(self, inputs, train=None, mask=None):
-        out = tf.keras.layers.Flatten()(inputs)
-        out = self.first_fc(out)
-        out = self.last_fc(out)
+        out = self.conv_1(inputs)
+        out = self.maxp_1(out)
+        out = self.conv_2(out)
+        out = self.maxp_2(out)
+        out = tf.keras.layers.Flatten()(out)
+        out = self.dense1(out)
+        out = self.dense2(out)
         return out
 
 class Cifar10Net(tf.keras.Model):
@@ -31,7 +40,7 @@ class Cifar10Net(tf.keras.Model):
 
 
     def call(self, inputs,  train=None, mask=None):
-        out = self.relu(self.bn(self.conv_1(inputs)))
+        out = self.relu(self.bn(self.conv(inputs)))
         out = self.block1(out)
         out = self.block2(out)
         out = self.block3(out)
@@ -57,7 +66,7 @@ class ResBlock(tf.keras.Model):
         out = self.bn_2(self.conv_2(out))
 
         if self.pad:
-            pad = (0, self.channel//4, self.channel//4, 0)
+            pad = [[0, 0], [0, 0], [0, 0], [self.channel//4, self.channel//4]]
             out += tf.pad(inputs[:, ::2, ::2, :], pad, 'constant')
         else:
             out += inputs

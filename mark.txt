@@ -4,6 +4,8 @@ VAE(gamma=1.0) larger beta makes simpler q(z|x) and trans less infomation
 
 epoch-80; lr-0.3(0~70); lr-0.18(70~80);
 
+emnist-clip:11;epoch-50;lr-0.0003;Adam;batch-32
+cifarX-clip:175;epoch-90;lr-0.001;SGD;batch-128
 
 1.伪代码中花体U代指什么，前文中提到用以代替U_t^m，显然此处不能代表此含义(未被eliminate的user集？)
 
