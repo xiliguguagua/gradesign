@@ -35,7 +35,7 @@ class Cifar10Net(tf.keras.Model):
         self.block2 = ResBlock(32, 2, True)
         self.block3 = ResBlock(64, 2, True)
 
-        self.avgpool = tf.keras.layers.AvgPool2D(2)
+        self.avgpool = tf.keras.layers.AvgPool2D()
         self.fc = tf.keras.layers.Dense(10)
 
 
