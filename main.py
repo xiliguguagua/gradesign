@@ -14,30 +14,30 @@ from server import Server
 
 def get_args():
     parser = argparse.ArgumentParser(description="MSFL")
-    parser.add_argument("--task", type=str, default='cifar10')
-    parser.add_argument("--N", type=int, default=15,  # ----------------------------------------------------------------
+    parser.add_argument("--task", type=str, default='emnist/mnist')
+    parser.add_argument("--N", type=int, default=100,
                         help="user num")
-    parser.add_argument("--Na", type=int, default=1,  # ----------------------------------------------------------------
+    parser.add_argument("--Na", type=int, default=0,
                         help="attacker num")
-    parser.add_argument("--M", type=int, default=2,  # -----------------------------------------------------------------
+    parser.add_argument("--M", type=int, default=10,
                         help="shuffler num")
     parser.add_argument("--T", type=int, default=2,
                         help="total communication round")
-    parser.add_argument("--k", type=int, default=5,  # -----------------------------------------------------------------
+    parser.add_argument("--k", type=int, default=10,
                         help="least user num in a shuffler")
-    parser.add_argument("--local_lr", type=float, default=0.1)
-    parser.add_argument("--global_lr", type=float, default=0.001)
-    parser.add_argument("--epoch", type=int, default=100,
+    parser.add_argument("--local_lr", type=float, default=0.0003)
+    parser.add_argument("--global_lr", type=float, default=0.000003)
+    parser.add_argument("--epoch", type=int, default=50,
                         help="max epoch in local train")
-    parser.add_argument("--batch_size", type=int, default=128,
+    parser.add_argument("--batch_size", type=int, default=32,
                         help="batch size")
-    parser.add_argument("--clip", type=float, default=1.,
+    parser.add_argument("--clip", type=float, default=15.,
                         help="weight norm2 clip")
-    parser.add_argument("--epsilon", type=float, default=1.,
+    parser.add_argument("--epsilon", type=float, default=10.,
                         help="epsilon in (epsilon, delta)-DP")
-    parser.add_argument("--DMS", type=bool, default=True,
+    parser.add_argument("--DMS", type=bool, default=False,
                         help="enbale DMS")
-    parser.add_argument("--AAE", type=bool, default=True,
+    parser.add_argument("--AAE", type=bool, default=False,
                         help="enbale AAE")
     parser.add_argument("--fA_coeff", type=float, default=0.001,
                         help="zeta in fA()")
@@ -68,8 +68,8 @@ def get_args():
 if __name__ == '__main__':
     args = get_args()
     train_dataset, test_dataset, input_shape = load_data(args)
-    global_testset = test_dataset.take(100).cache()  # ------------------------------------------------------------------
-    test_dataset = test_dataset.skip(100).cache()  # --------------------------------------------------------------------
+    global_testset = test_dataset.take(100)
+    test_dataset = test_dataset.skip(100)
     n_sum = 0
     ns = []
     server = Server(args, input_shape, global_testset)
@@ -122,7 +122,7 @@ if __name__ == '__main__':
             u_shufflers[sid].add_user(user)
 
         m_shuffler.split_upload(server)
-        server.malice_evaluation(m_shuffler, t+1)
+        # server.malice_evaluation(m_shuffler, t+1)
         server.aggregate(m_shuffler, np.array(ns), n_sum)
 
         # reset every user shuffler
@@ -130,6 +130,7 @@ if __name__ == '__main__':
             shflr.reset()
 
     server.output_logs()
+    quit()
     malice_pred = np.zeros(args.N)
     for i in server.banned_ids:
         malice_pred[i] = 1

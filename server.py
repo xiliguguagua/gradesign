@@ -39,9 +39,8 @@ class Server:
 
         self.banned_ids = set()
 
-        for (inputs, targets) in self.test_dataset.batch(1).cache():
+        for (inputs, targets) in self.test_dataset.take(1).cache().batch(1).repeat():
             outputs = self.global_model(tf.cast(inputs, dtype=tf.float32))
-            break
 
         self.sync_weights = self.global_model.trainable_weights
         self.loss_record = []
@@ -79,7 +78,7 @@ class Server:
         y_pred = []
         y_true = []
         global_loss = 0
-        for idx, (inputs, targets) in enumerate(self.test_dataset.batch(1).cache()):
+        for idx, (inputs, targets) in enumerate(self.test_dataset.cache().batch(1)):
             outputs = self.global_model(tf.cast(inputs, dtype=tf.float32), training=False)
             global_loss += CELoss(targets, outputs)
             y_pred.append(tf.argmax(outputs[0]))
@@ -91,6 +90,8 @@ class Server:
         c = confusion_matrix(y_true, y_pred)
         df = pd.DataFrame(c)
         df.to_csv('./logs/confusion@acc_{}.csv'.format(acc))
+
+        print('agg loss {}'.format(global_loss))
 
     def output_logs(self):
         df = pd.DataFrame(self.loss_record)

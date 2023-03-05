@@ -35,13 +35,13 @@ class User(object):
         elif args.task == 'cifar10':
             self.local_model = Cifar10Net(input_shape)
         self.optm = tf.keras.optimizers.SGD(learning_rate=self.lr)
-        self.train_dataset = train_dataset
-        self.test_dataset = test_dataset
+        self.train_dataset = train_dataset.cache()
+        self.test_dataset = test_dataset.cache()
         self.grad = None
 
-        for (inputs, targets) in self.test_dataset.batch(1).cache():
+        init_dataset = self.test_dataset.take(1)
+        for (inputs, targets) in init_dataset.cache().batch(1):
             outputs = self.local_model(tf.cast(inputs, dtype=tf.float32))
-            break
 
     def local_train(self):
         best_loss = 1e10
@@ -49,7 +49,7 @@ class User(object):
         for _ in range(self.epoch):
             valid_loss = 0
             #  train
-            for batch_idx, (inputs, targets) in enumerate(self.train_dataset.batch(self.batch_size).cache()):
+            for batch_idx, (inputs, targets) in enumerate(self.train_dataset.cache().batch(self.batch_size)):
                 #  attack
                 if self.ismalice and self.attack_method == 'label-flipping':
                     targets = tf.where(targets == 4, 0, targets)
@@ -73,7 +73,7 @@ class User(object):
                 self.local_model.set_weights(new_weights)
 
             #  validation
-            for (inputs, targets) in self.test_dataset.batch(self.batch_size).cache():
+            for (inputs, targets) in self.test_dataset.cache().batch(self.batch_size):
                 # attack
                 if self.ismalice and self.attack_method == 'label-flipping':
                     targets = tf.where(targets == 4, 0, targets)
@@ -89,6 +89,8 @@ class User(object):
             if valid_loss < best_loss:
                 best_loss = valid_loss
                 best_model = deepcopy(self.local_model)
+
+            print('user {} | epoch {} | loss {}'.format(self.id, _, valid_loss/60))
 
         if self.ismalice and self.attack_method == 'additive noise':
             self.weights += tf.random.normal(self.weight_shapes.shape) * self.noise_coeff
