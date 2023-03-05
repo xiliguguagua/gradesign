@@ -72,7 +72,7 @@ if __name__ == '__main__':
     # train_dataset = train_dataset.take(300).cache()
     # test_dataset = test_dataset.take(60).cache()
     model = Cifar10Net(input_shape)
-    optm = tf.keras.optimizers.Adam(learning_rate=args.local_lr, weight_decay=0.0001)
+    optm = tf.keras.optimizers.Adam(learning_rate=args.local_lr, weight_decay=0.0001, ema_momentum=0.9)
 
     norm = []
     for _ in range(args.epoch):
@@ -84,13 +84,16 @@ if __name__ == '__main__':
             grad = tape.gradient(loss, model.trainable_weights)
             optm.apply_gradients(zip(grad, model.trainable_weights))
             weights, weight_shapes = flatten(model.trainable_weights)
+            norm.append(tf.norm(weights))
 
+        norm.sort()
+        print(norm[round(len(norm)/2)])
         pred = []
         true = []
         test_loss = []
-        for batch_idx, (input, target) in enumerate(test_dataset.batch(args.batch_size).cache()):
+        for batch_idx, (input, target) in enumerate(test_dataset.batch(1).cache()):
             output = model(tf.cast(input, dtype=tf.float32), training=False)
             pred.append(tf.argmax(output[0]))
             true.append(target[0])
             test_loss.append(CELoss(target, output))
-        print('epoch {} test_loss {} acc{}'.format(_, sum(test_loss)/len(test_loss), accuracy_score(true, pred)))
+        print('epoch {} test_loss {} acc {}'.format(_, sum(test_loss)/len(test_loss), accuracy_score(true, pred)))
