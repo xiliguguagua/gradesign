@@ -11,29 +11,34 @@ from shuffler import UserShuffler, ModelShuffler
 from user import User
 from server import Server
 
+import warnings
+warnings.filterwarnings("ignore", category=Warning)
+# warnings.filterwarnings("ignore", category=RuntimeWarning)
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 def get_args():
     parser = argparse.ArgumentParser(description="MSFL")
-    parser.add_argument("--task", type=str, default='emnist/mnist')
+    parser.add_argument("--task", type=str, default='cifar10')
     parser.add_argument("--N", type=int, default=100,
                         help="user num")
     parser.add_argument("--Na", type=int, default=0,
                         help="attacker num")
     parser.add_argument("--M", type=int, default=10,
                         help="shuffler num")
-    parser.add_argument("--T", type=int, default=2,
+    parser.add_argument("--T", type=int, default=150,
                         help="total communication round")
     parser.add_argument("--k", type=int, default=10,
                         help="least user num in a shuffler")
-    parser.add_argument("--local_lr", type=float, default=0.0003)
-    parser.add_argument("--global_lr", type=float, default=0.000003)
+    parser.add_argument("--local_lr", type=float, default=0.001)
+    parser.add_argument("--global_lr", type=float, default=0.00001)
     parser.add_argument("--epoch", type=int, default=50,
                         help="max epoch in local train")
     parser.add_argument("--batch_size", type=int, default=32,
                         help="batch size")
-    parser.add_argument("--clip", type=float, default=15.,
+    parser.add_argument("--clip", type=float, default=21.4,
                         help="weight norm2 clip")
-    parser.add_argument("--epsilon", type=float, default=10.,
+    parser.add_argument("--epsilon", type=float, default=100.,
                         help="epsilon in (epsilon, delta)-DP")
     parser.add_argument("--DMS", type=bool, default=False,
                         help="enbale DMS")
@@ -92,18 +97,19 @@ if __name__ == '__main__':
         malice_label[m_id] = 1
 
     # split dataset to all users
+    n = 300
+    dp_delta = 2 * args.clip / n
+    sigma = compute_noise(n, args.batch_size, args.epsilon, args.epoch * args.T,
+                          dp_delta, 1e-7)
     for i in range(args.N):
         n = 300  # random.randint(10, 20)  ------------------------------------------------------------------------------
         n_sum += n
         ns.append(n)
-        dp_delta = 2 * args.clip / n
-        sigma = compute_noise(n, args.batch_size, args.epsilon, args.epoch * args.T,
-                              dp_delta, 1e-5)
         users.append(User(i, args, malice_label[i],
-                          train_dataset.take(n).cache(), test_dataset.take(round(n/5)).cache(),
+                          train_dataset.take(n), test_dataset.take(round(n/5)),
                           input_shape, n, sigma))
-        train_dataset = train_dataset.skip(n).cache()
-        test_dataset = test_dataset.skip(round(n/5)).cache()
+        train_dataset = train_dataset.skip(n)
+        test_dataset = test_dataset.skip(round(n/5))
 
     # each communication turn
     for t in range(args.T):

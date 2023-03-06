@@ -9,6 +9,8 @@ import cai.mobilenet
 import cai.layers
 from network import EmnistNet, Cifar10Net
 
+import warnings
+warnings.filterwarnings("ignore")
 
 class Server:
 
@@ -39,8 +41,9 @@ class Server:
 
         self.banned_ids = set()
 
-        for (inputs, targets) in self.test_dataset.take(1).cache().batch(1).repeat():
-            outputs = self.global_model(tf.cast(inputs, dtype=tf.float32))
+        datasample = self.test_dataset.take(1)
+        for (inputs, targets) in datasample.cache().batch(1):
+            self.global_model(tf.cast(inputs, dtype=tf.float32), training=False)
 
         self.sync_weights = self.global_model.trainable_weights
         self.loss_record = []
@@ -48,7 +51,7 @@ class Server:
         self.confusion_record = []
 
     def aggregate(self, m_shuffler, ns, n_sum):
-        aggregated_weights, shapes = flatten(self.global_model.trainable_weights)
+        aggregated_weights, shapes = flatten(self.global_model.weights)
         aggregated_weights -= self.lr * aggregated_weights
 
         ratios = ns / n_sum

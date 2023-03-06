@@ -8,6 +8,8 @@ import cai.mobilenet
 import cai.layers
 from network import EmnistNet, Cifar10Net
 
+import warnings
+warnings.filterwarnings("ignore")
 
 class User(object):
 
@@ -34,21 +36,28 @@ class User(object):
             self.local_model = EmnistNet(input_shape)
         elif args.task == 'cifar10':
             self.local_model = Cifar10Net(input_shape)
-        self.optm = tf.keras.optimizers.SGD(learning_rate=self.lr)
-        self.train_dataset = train_dataset.cache()
-        self.test_dataset = test_dataset.cache()
+        self.optm = tf.keras.optimizers.SGD(learning_rate=self.lr, weight_decay=0.0001)
+        self.train_dataset = train_dataset
+        self.test_dataset = test_dataset
         self.grad = None
+        self.trainabel_flag = []
 
-        init_dataset = self.test_dataset.take(1)
-        for (inputs, targets) in init_dataset.cache().batch(1):
-            outputs = self.local_model(tf.cast(inputs, dtype=tf.float32))
+        datasample = self.test_dataset.take(1)
+        for (inputs, targets) in datasample.cache().batch(1):
+            self.local_model(tf.cast(inputs, dtype=tf.float32), training=False)
+
+        for param in self.local_model.weights:
+            if param.trainable:
+                self.trainabel_flag.append(1)
+            else:
+                self.trainabel_flag.append(0)
 
     def local_train(self):
-        best_loss = 1e10
-        best_model = deepcopy(self.local_model)
+
         for _ in range(self.epoch):
             valid_loss = 0
             #  train
+            norms = []
             for batch_idx, (inputs, targets) in enumerate(self.train_dataset.cache().batch(self.batch_size)):
                 #  attack
                 if self.ismalice and self.attack_method == 'label-flipping':
@@ -67,13 +76,20 @@ class User(object):
                 self.optm.apply_gradients(zip(grad, self.local_model.trainable_weights))
 
                 #  clipping & perturbation
-                self.weights, self.weight_shapes = flatten(self.local_model.trainable_weights)
-                self.clipping_perturbation()
-                new_weights = reconstruct(self.weights, self.weight_shapes)
+                nontrainable_weights = self.local_model.non_trainable_weights
+                trainable_weights = self.local_model.trainable_weights
+                flat_trainable, weight_shapes = flatten(trainable_weights)
+                flat_trainable = self.clipping_perturbation(flat_trainable)
+                trainable_weights = reconstruct(flat_trainable, weight_shapes)
+                new_weights = merge(trainable_weights, nontrainable_weights, self.trainabel_flag)
                 self.local_model.set_weights(new_weights)
+                self.weights, self.weight_shapes = flatten(self.local_model.weights)
+
+                norms.append(tf.norm(flat_trainable))
 
             #  validation
-            for (inputs, targets) in self.test_dataset.cache().batch(self.batch_size):
+
+            for (inputs, targets) in self.test_dataset.cache().batch(1):
                 # attack
                 if self.ismalice and self.attack_method == 'label-flipping':
                     targets = tf.where(targets == 4, 0, targets)
@@ -86,26 +102,26 @@ class User(object):
                 outputs = self.local_model(tf.cast(inputs, dtype=tf.float32), training=False)
                 valid_loss += CELoss(targets, outputs)
 
-            if valid_loss < best_loss:
-                best_loss = valid_loss
-                best_model = deepcopy(self.local_model)
+            # if valid_loss < best_loss:
+            #     best_loss = valid_loss
+            #     best_param = new_weights
 
-            print('user {} | epoch {} | loss {}'.format(self.id, _, valid_loss/60))
+            norms.sort()
+            print('user {} | epoch {} | loss {} | norm {}'.format(self.id, _, valid_loss/60, norms[round(len(norms)/2)]))
+
+        # self.weights = best_param
 
         if self.ismalice and self.attack_method == 'additive noise':
             self.weights += tf.random.normal(self.weight_shapes.shape) * self.noise_coeff
 
-        # prepare best model params
-        self.local_model = best_model
-        self.weights, self.weight_shapes = flatten(self.local_model.trainable_weights)
-
-    def clipping_perturbation(self):
-        l2_norm = tf.norm(self.weights)
-        weights = self.weights / tf.maximum(1., l2_norm / self.clip) + tf.random.normal(self.weights.shape, 0, self.sigma)
+    def clipping_perturbation(self, weights):
+        sensitivity = self.lr * self.clip / self.n
+        l2_norm = tf.norm(weights)
+        weights = weights / tf.maximum(1., l2_norm / self.clip) + tf.random.normal(weights.shape, 0, self.sigma * sensitivity)
         return weights
 
     def update_model(self, global_weights):
         self.local_model.set_weights(global_weights)
 
     def prepare_weights(self):
-        self.weights, self.weight_shapes = flatten(self.local_model.trainable_weights)
+        self.weights, self.weight_shapes = flatten(self.local_model.weights)

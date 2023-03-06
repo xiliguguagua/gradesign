@@ -30,6 +30,28 @@ def reconstruct(flat_w, shapes):
         ptr += w_len
     return weights
 
+def merge(trainable, nontrainable, flags):
+    new_weights = []
+    t_ptr = 0
+    nont_ptr = 0
+    flag_ptr = 0
+    while t_ptr < len(trainable) and nont_ptr < len(nontrainable):
+        if flags[flag_ptr] == 1:
+            new_weights.append(trainable[t_ptr])
+            t_ptr += 1
+        else:
+            new_weights.append(nontrainable[nont_ptr])
+            nont_ptr += 1
+        flag_ptr += 1
+
+    if t_ptr < len(trainable):
+        new_weights += trainable[t_ptr:]
+
+    if nont_ptr < len(nontrainable):
+        new_weights += nontrainable[nont_ptr:]
+
+    return new_weights
+
 def shuffle(weights):
     #  self.m_weights = self.m_weights.shuffle()
     pass
