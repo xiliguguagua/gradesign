@@ -34,9 +34,10 @@ class User(object):
 
         if args.task == 'emnist/mnist':
             self.local_model = EmnistNet(input_shape)
+            self.optm = tf.keras.optimizers.Adam(learning_rate=self.lr, weight_decay=0.0001)
         elif args.task == 'cifar10':
             self.local_model = Cifar10Net(input_shape)
-        self.optm = tf.keras.optimizers.SGD(learning_rate=self.lr, weight_decay=0.0001)
+            self.optm = tf.keras.optimizers.SGD(learning_rate=self.lr, weight_decay=0.0001)
         self.train_dataset = train_dataset
         self.test_dataset = test_dataset
         self.grad = None
@@ -53,8 +54,8 @@ class User(object):
                 self.trainabel_flag.append(0)
 
     def local_train(self):
-
-        for _ in range(self.epoch):
+        curve = []
+        for _ in range(self.epoch * 20):
             valid_loss = 0
             #  train
             norms = []
@@ -75,12 +76,14 @@ class User(object):
                 grad = tape.gradient(loss, self.local_model.trainable_weights)
                 self.optm.apply_gradients(zip(grad, self.local_model.trainable_weights))
 
-                #  clipping & perturbation
                 nontrainable_weights = self.local_model.non_trainable_weights
                 trainable_weights = self.local_model.trainable_weights
+
+                #  clipping & perturbation
                 flat_trainable, weight_shapes = flatten(trainable_weights)
-                flat_trainable = self.clipping_perturbation(flat_trainable)
-                trainable_weights = reconstruct(flat_trainable, weight_shapes)
+                # flat_trainable = self.clipping_perturbation(flat_trainable)
+                # trainable_weights = reconstruct(flat_trainable, weight_shapes)
+
                 new_weights = merge(trainable_weights, nontrainable_weights, self.trainabel_flag)
                 self.local_model.set_weights(new_weights)
                 self.weights, self.weight_shapes = flatten(self.local_model.weights)
@@ -108,6 +111,11 @@ class User(object):
 
             norms.sort()
             print('user {} | epoch {} | loss {} | norm {}'.format(self.id, _, valid_loss/60, norms[round(len(norms)/2)]))
+            curve.append(norms[round(len(norms)/2)])
+            import matplotlib.pyplot as plt
+            if _ % 1000 == 0 and _ > 1 :
+                plt.plot(curve)
+                plt.show()
 
         # self.weights = best_param
 

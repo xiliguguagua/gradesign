@@ -5,9 +5,13 @@ VAE(gamma=1.0) larger beta makes simpler q(z|x) and trans less infomation
 epoch-80; lr-0.3(0~70); lr-0.18(70~80);
 
 emnist:
-clip:15;epoch-50;lr-0.0003;Adam;batch-32
+    clip-15~20
+    epoch-50
+    lr-0.0003
+    batch-32
+    Adam-weight_decay-0.0001
 cifarX:
-    clip-21.4
+    clip-21.4~22
     epoch-50
     lr-0.001
     batch-32

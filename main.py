@@ -32,13 +32,13 @@ def get_args():
                         help="least user num in a shuffler")
     parser.add_argument("--local_lr", type=float, default=0.001)
     parser.add_argument("--global_lr", type=float, default=0.00001)
-    parser.add_argument("--epoch", type=int, default=50,
+    parser.add_argument("--epoch", type=int, default=500,
                         help="max epoch in local train")
     parser.add_argument("--batch_size", type=int, default=32,
                         help="batch size")
-    parser.add_argument("--clip", type=float, default=21.4,
+    parser.add_argument("--clip", type=float, default=15,
                         help="weight norm2 clip")
-    parser.add_argument("--epsilon", type=float, default=100.,
+    parser.add_argument("--epsilon", type=float, default=1.,
                         help="epsilon in (epsilon, delta)-DP")
     parser.add_argument("--DMS", type=bool, default=False,
                         help="enbale DMS")
