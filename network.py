@@ -73,3 +73,37 @@ class ResBlock(tf.keras.Model):
 
         out = self.relu(out)
         return out
+
+def create_E_model(input_shape):
+    return tf.keras.models.Sequential([
+        tf.keras.layers.Conv2D(16, 8, strides=2, padding='same', activation='ReLU', use_bias=False, input_shape=input_shape),
+        tf.keras.layers.MaxPool2D(2, 1),
+        tf.keras.layers.Conv2D(32, 4, strides=2, padding='valid', activation='ReLU', use_bias=False),
+        tf.keras.layers.MaxPool2D(2, 1),
+        tf.keras.layers.Dense(32, activation='tanh'),
+        tf.keras.layers.Dense(10),
+        tf.keras.layers.Softmax(),
+    ])
+
+def create_C_model(input_shape):
+    return tf.keras.models.Sequential([
+        tf.keras.layers.Conv2D(16, 3, strides=1, padding='same', use_bias=False, input_shape=input_shape),
+        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.ReLU(),
+        ResBlock(16, 1, False),
+        ResBlock(32, 2, True),
+        ResBlock(64, 2, True),
+        tf.keras.layers.AvgPool2D(),
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(10),
+        tf.keras.layers.Softmax(),
+    ])
+
+def model_fn(args, input_shape):
+    if args.
+  keras_model = create_kera_model()
+  return tff.learning.models.from_keras_model(
+      keras_model,
+      input_spec=federated_train_data[0].element_spec,
+      loss=tf.keras.losses.SparseCategoricalCrossentropy(),
+      metrics=[tf.keras.metrics.SparseCategoricalAccuracy()])
