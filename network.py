@@ -59,9 +59,9 @@ class ResBlock(tf.keras.Model):
         self.pad = pad
         self.channel = channel
         self.conv_1 = tf.keras.layers.Conv2D(channel, 3, strides=stride, padding='same', use_bias=False)
-        self.bn_1 = tf.keras.layers.BatchNormalization()
+        self.bn_1 = tf.keras.layers.GroupNormalization(channel)
         self.conv_2 = tf.keras.layers.Conv2D(channel, 3, strides=1, padding='same', use_bias=False)
-        self.bn_2 = tf.keras.layers.BatchNormalization()
+        self.bn_2 = tf.keras.layers.GroupNormalization(channel)
         self.relu = tf.keras.layers.ReLU()
 
     def call(self, inputs, train=None, mask=None):
@@ -91,7 +91,7 @@ def create_E_model(input_shape):
 def create_C_model(input_shape):
     return tf.keras.models.Sequential([
         tf.keras.layers.Conv2D(16, 3, strides=1, padding='same', use_bias=False, input_shape=input_shape),
-        tf.keras.layers.BatchNormalization(),
+        tf.keras.layers.GroupNormalization(groups=16),
         tf.keras.layers.ReLU(),
         ResBlock(16, 1, False),
         ResBlock(32, 2, True),
@@ -109,7 +109,7 @@ def model_fn():
         keras_model = create_C_model(gl.input_shape)
     else:
         return None
-    return tff.learning.from_keras_model(
+    return tff.learning.models.from_keras_model(
         keras_model,
         input_spec=gl.element_spec,
         loss=tf.keras.losses.SparseCategoricalCrossentropy(),

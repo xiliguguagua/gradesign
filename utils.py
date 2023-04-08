@@ -13,12 +13,14 @@ def load_data(args):
     return train_dataset, test_dataset, input_shape
 
 
-def keras_evaluate(model, test_data, metric):
-    metric.reset_states()
+def keras_evaluate(model, test_data, acc_metric, loss_metric):
+    acc_metric.reset_states()
+    loss_metric.reset_states()
     for batch in test_data:
-        preds = model(batch['x'], training=False)
-        metric.update_state(y_true=batch['y'], y_pred=preds)
-    return metric.result()
+        preds = model(batch[0], training=False)
+        acc_metric.update_state(y_true=batch[1], y_pred=preds)
+        loss_metric.update_state(y_true=batch[1], y_pred=preds)
+    return acc_metric.result(), loss_metric.result()
 
 
 def CELoss(y_true, y_pred):

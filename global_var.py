@@ -2,8 +2,8 @@ import argparse
 from utils import *
 
 parser = argparse.ArgumentParser(description="MSFL")
-parser.add_argument("--task", type=str, default='cifar10')
-parser.add_argument("--N", type=int, default=5,
+parser.add_argument("--task", type=str, default='emnist/mnist')
+parser.add_argument("--N", type=int, default=100,
                     help="user num")
 parser.add_argument("--Na", type=int, default=0,
                     help="attacker num")
