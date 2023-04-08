@@ -1,11 +1,8 @@
 import tensorflow as tf
 from tensorflow import keras
-from keras import backend
 from copy import deepcopy
 
 from utils import *
-import cai.mobilenet
-import cai.layers
 from network import EmnistNet, Cifar10Net
 
 import warnings

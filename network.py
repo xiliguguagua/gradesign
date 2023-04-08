@@ -1,5 +1,8 @@
 import tensorflow as tf
+import tensorflow_federated as tff
 from tensorflow import keras
+
+import global_var as gl
 
 class EmnistNet(tf.keras.Model):
 
@@ -76,9 +79,9 @@ class ResBlock(tf.keras.Model):
 
 def create_E_model(input_shape):
     return tf.keras.models.Sequential([
-        tf.keras.layers.Conv2D(16, 8, strides=2, padding='same', activation='ReLU', use_bias=False, input_shape=input_shape),
+        tf.keras.layers.Conv2D(16, 8, strides=2, padding='same', activation='relu', input_shape=input_shape),
         tf.keras.layers.MaxPool2D(2, 1),
-        tf.keras.layers.Conv2D(32, 4, strides=2, padding='valid', activation='ReLU', use_bias=False),
+        tf.keras.layers.Conv2D(32, 4, strides=2, padding='valid', activation='relu'),
         tf.keras.layers.MaxPool2D(2, 1),
         tf.keras.layers.Dense(32, activation='tanh'),
         tf.keras.layers.Dense(10),
@@ -99,11 +102,15 @@ def create_C_model(input_shape):
         tf.keras.layers.Softmax(),
     ])
 
-def model_fn(args, input_shape):
-    if args.
-  keras_model = create_kera_model()
-  return tff.learning.models.from_keras_model(
-      keras_model,
-      input_spec=federated_train_data[0].element_spec,
-      loss=tf.keras.losses.SparseCategoricalCrossentropy(),
-      metrics=[tf.keras.metrics.SparseCategoricalAccuracy()])
+def model_fn():
+    if gl.args.task == 'emnist/mnist':
+        keras_model = create_E_model(gl.input_shape)
+    elif gl.args.task == 'cifar10':
+        keras_model = create_C_model(gl.input_shape)
+    else:
+        return None
+    return tff.learning.from_keras_model(
+        keras_model,
+        input_spec=gl.element_spec,
+        loss=tf.keras.losses.SparseCategoricalCrossentropy(),
+        metrics=[tf.keras.metrics.SparseCategoricalAccuracy()])

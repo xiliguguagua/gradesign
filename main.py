@@ -8,8 +8,8 @@ from sklearn.metrics import confusion_matrix
 
 from utils import *
 from shuffler import UserShuffler, ModelShuffler
-from user import User
-from server import Server
+# from user import User
+# from server import Server
 
 import warnings
 warnings.filterwarnings("ignore", category=Warning)
@@ -19,7 +19,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 
 def get_args():
     parser = argparse.ArgumentParser(description="MSFL")
-    parser.add_argument("--task", type=str, default='cifar10')
+    parser.add_argument("--task", type=str, default='emnist/mnist')
     parser.add_argument("--N", type=int, default=100,
                         help="user num")
     parser.add_argument("--Na", type=int, default=0,
@@ -75,70 +75,70 @@ if __name__ == '__main__':
     train_dataset, test_dataset, input_shape = load_data(args)
     global_testset = test_dataset.take(100)
     test_dataset = test_dataset.skip(100)
-    n_sum = 0
-    ns = []
-    server = Server(args, input_shape, global_testset)
-    m_shuffler = ModelShuffler(args)
-    u_shufflers = []
-    users = []
-
-    for i in range(args.M):
-        u_shufflers.append(UserShuffler(args))
-    m_shuffler.collect_usershuffler(u_shufflers)
-
-    # generate malice user id
-    malice_idset = set()
-    malice_label = [0] * args.N
-    for i in range(args.Na):
-        m_id = random.randint(0, args.N-1)
-        while m_id in malice_idset:
-            m_id = random.randint(0, args.N-1)
-        malice_idset.add(m_id)
-        malice_label[m_id] = 1
-
-    # split dataset to all users
-    n = 300
-    dp_delta = 2 * args.clip / n
-    sigma = compute_noise(n, args.batch_size, args.epsilon, args.epoch * args.T,
-                          dp_delta, 1e-7)
-    for i in range(args.N):
-        n = 300  # random.randint(10, 20)  ------------------------------------------------------------------------------
-        n_sum += n
-        ns.append(n)
-        users.append(User(i, args, malice_label[i],
-                          train_dataset.take(n), test_dataset.take(round(n/5)),
-                          input_shape, n, sigma))
-        train_dataset = train_dataset.skip(n)
-        test_dataset = test_dataset.skip(round(n/5))
-
-    # each communication turn
-    for t in range(args.T):
-        for user in users:
-            # sync global model
-            user.update_model(server.global_model.get_weights())
-
-            # AAE eliminate malice users
-            if args.AAE and user.id in server.banned_ids:
-                user.prepare_weights()
-            else:   # local train
-                user.local_train()
-
-            # user shuffle
-            sid = random.randint(0, args.M-1)
-            u_shufflers[sid].add_user(user)
-
-        m_shuffler.split_upload(server)
-        # server.malice_evaluation(m_shuffler, t+1)
-        server.aggregate(m_shuffler, np.array(ns), n_sum)
-
-        # reset every user shuffler
-        for shflr in u_shufflers:
-            shflr.reset()
-
-    server.output_logs()
-    quit()
-    malice_pred = np.zeros(args.N)
-    for i in server.banned_ids:
-        malice_pred[i] = 1
-
-    print(classification_report(malice_label, malice_pred, target_names=['benign', 'malice']))
+    # n_sum = 0
+    # ns = []
+    # server = Server(args, input_shape, global_testset)
+    # m_shuffler = ModelShuffler(args)
+    # u_shufflers = []
+    # users = []
+    #
+    # for i in range(args.M):
+    #     u_shufflers.append(UserShuffler(args))
+    # m_shuffler.collect_usershuffler(u_shufflers)
+    #
+    # # generate malice user id
+    # malice_idset = set()
+    # malice_label = [0] * args.N
+    # for i in range(args.Na):
+    #     m_id = random.randint(0, args.N-1)
+    #     while m_id in malice_idset:
+    #         m_id = random.randint(0, args.N-1)
+    #     malice_idset.add(m_id)
+    #     malice_label[m_id] = 1
+    #
+    # # split dataset to all users
+    # n = 300
+    # dp_delta = 2 * args.clip / n
+    # sigma = compute_noise(n, args.batch_size, args.epsilon, args.epoch * args.T,
+    #                       dp_delta, 1e-7)
+    # for i in range(args.N):
+    #     n = 300  # random.randint(10, 20)  ------------------------------------------------------------------------------
+    #     n_sum += n
+    #     ns.append(n)
+    #     users.append(User(i, args, malice_label[i],
+    #                       train_dataset.take(n), test_dataset.take(round(n/5)),
+    #                       input_shape, n, sigma))
+    #     train_dataset = train_dataset.skip(n)
+    #     test_dataset = test_dataset.skip(round(n/5))
+    #
+    # # each communication turn
+    # for t in range(args.T):
+    #     for user in users:
+    #         # sync global model
+    #         user.update_model(server.global_model.get_weights())
+    #
+    #         # AAE eliminate malice users
+    #         if args.AAE and user.id in server.banned_ids:
+    #             user.prepare_weights()
+    #         else:   # local train
+    #             user.local_train()
+    #
+    #         # user shuffle
+    #         sid = random.randint(0, args.M-1)
+    #         u_shufflers[sid].add_user(user)
+    #
+    #     m_shuffler.split_upload(server)
+    #     # server.malice_evaluation(m_shuffler, t+1)
+    #     server.aggregate(m_shuffler, np.array(ns), n_sum)
+    #
+    #     # reset every user shuffler
+    #     for shflr in u_shufflers:
+    #         shflr.reset()
+    #
+    # server.output_logs()
+    # quit()
+    # malice_pred = np.zeros(args.N)
+    # for i in server.banned_ids:
+    #     malice_pred[i] = 1
+    #
+    # print(classification_report(malice_label, malice_pred, target_names=['benign', 'malice']))
