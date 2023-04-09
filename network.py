@@ -83,6 +83,7 @@ def create_E_model(input_shape):
         tf.keras.layers.MaxPool2D(2, 1),
         tf.keras.layers.Conv2D(32, 4, strides=2, padding='valid', activation='relu'),
         tf.keras.layers.MaxPool2D(2, 1),
+        tf.keras.layers.Flatten(),
         tf.keras.layers.Dense(32, activation='tanh'),
         tf.keras.layers.Dense(10),
         tf.keras.layers.Softmax(),
